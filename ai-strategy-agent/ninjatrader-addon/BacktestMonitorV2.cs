@@ -9,6 +9,8 @@ using NinjaTrader.Gui.AddOns;
 using NinjaTrader.Core.Globals;
 using NinjaTrader.Data;
 using System.Linq;
+using StackExchange.Redis;
+using Newtonsoft.Json;
 #endregion
 
 namespace NinjaTrader.Gui.AddOns
@@ -93,11 +95,64 @@ namespace NinjaTrader.Gui.AddOns
             AddOnState.CustomProperties["SelectedInstruments"] = string.Join(",", selectedInstruments);
         }
 
+        private ConnectionMultiplexer redis;
+        private IDatabase db;
+
+        protected override void OnStateChange()
+        {
+            if (State == State.SetDefaults)
+            {
+                Name = "Backtest Monitor V2";
+                selectedInstruments = new List<string> { "ES ##-##", "NQ ##-##", "GC ##-##" };
+            }
+            else if (State == State.Configure)
+            {
+                if (AddOnState.CustomProperties.ContainsKey("SelectedInstruments"))
+                {
+                    selectedInstruments = ((string)AddOnState.CustomProperties["SelectedInstruments"])
+                        .Split(',').ToList();
+                }
+                try
+                {
+                    redis = ConnectionMultiplexer.Connect("localhost");
+                    db = redis.GetDatabase();
+                    Log("Connected to Redis.", LogLevel.Info);
+                }
+                catch (Exception e)
+                {
+                    Log($"Error connecting to Redis: {e.Message}", LogLevel.Error);
+                }
+            }
+        }
+
         private void StartStreaming(string instrument)
         {
             // In a real implementation, we would use AddOnMarketData or BarsRequest here.
             // For now, we will just log that we are starting to stream.
             Log($"Starting to stream {instrument}", LogLevel.Info);
+            // This is a placeholder for the actual market data subscription
+            // OnMarketData(instrument, new MarketDataEventArgs());
+        }
+
+        private void OnMarketData(string instrument, MarketDataEventArgs args)
+        {
+            if (db == null) return;
+
+            var tick = new
+            {
+                instrument = instrument,
+                timestamp = DateTime.UtcNow.ToString("o"),
+                lastPrice = args.Price,
+                bid = args.Bid,
+                ask = args.Ask,
+                volume = args.Volume
+            };
+
+            string json = JsonConvert.SerializeObject(tick);
+            string key = $"tickstream:{instrument}";
+
+            db.ListLeftPushAsync(key, json);
+            db.ListTrimAsync(key, 0, 999);
         }
 
         private void StopStreaming(string instrument)

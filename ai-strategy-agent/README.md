@@ -51,3 +51,30 @@ python cli.py --analyze-strategy --submit-summary
 
 -   **Status Log:** Actions are logged to `logs/status_log.txt`.
 -   **Feedback Log:** Feedback is logged to `logs/feedback_log.csv`.
+
+## Redis Schema
+
+### Tick Stream
+
+-   **Key Pattern:** `tickstream:{instrument}` (e.g., `tickstream:NQ ##-##`)
+-   **Type:** List (capped at 1000 entries)
+-   **Value:** A JSON object with the following structure:
+    ```json
+    {
+      "instrument": "NQ ##-##",
+      "timestamp": "2025-07-21T15:43:22.123Z",
+      "lastPrice": 19745.25,
+      "bid": 19745.00,
+      "ask": 19745.50,
+      "volume": 3
+    }
+    ```
+
+### Inspecting Redis Data
+
+You can use the `redis-cli` to inspect the data in Redis.
+
+```bash
+# Get the last 10 ticks for NQ ##-##
+redis-cli lrange "tickstream:NQ ##-##" 0 9
+```
