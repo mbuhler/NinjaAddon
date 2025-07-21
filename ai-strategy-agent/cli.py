@@ -29,13 +29,28 @@ def get_sample_data(file_path, default_data):
         print(f"Warning: {file_path} not found. Using default mock data.")
         return default_data
 
+import subprocess
+from param_extractor import extract_params
+
 def analyze_strategy(args):
     action = "--analyze-strategy"
     model = os.getenv("MODEL", "openrouter/gpt-4")
-    strategy_file_path = './strategy_input/strategy_definition.json'
+    strategy_file_path = args.strategy if args.strategy else './strategy_input/strategy_definition.json'
 
     try:
-        if os.path.exists(strategy_file_path):
+        if args.strategy:
+            print(f"Analyzing strategy from {args.strategy}")
+            metadata = extract_params(args.strategy)
+            # This is a bit of a hack to make the metadata compatible with the StrategyDefinition model
+            strategy_def_data = {
+                "strategy_name": metadata["strategyName"],
+                "version": "1.0", # Not available in the C# file
+                "entry_logic": "", # Not available in the C# file
+                "exit_logic": "", # Not available in the C# file
+                "filters": [], # Not available in the C# file
+                "tunable_parameters": [{"name": k, "value": v, "range": []} for k, v in metadata["parameters"].items()]
+            }
+        elif os.path.exists(strategy_file_path):
             with open(strategy_file_path, 'r') as f:
                 strategy_def_data = json.load(f)
         else:
@@ -126,12 +141,13 @@ def evaluate_feedback(args):
 def main():
     parser = argparse.ArgumentParser(description="AI Strategy Companion CLI")
     parser.add_argument("--analyze-strategy", action="store_true", help="Run strategy analysis")
+    parser.add_argument("--strategy", help="Path to the C# strategy file to analyze.")
     parser.add_argument("--submit-summary", action="store_true", help="Submit market summary")
     parser.add_argument("--evaluate-feedback", action="store_true", help="Evaluate feedback")
 
     args = parser.parse_args()
 
-    if args.analyze_strategy:
+    if args.analyze_strategy or args.strategy:
         analyze_strategy(args)
 
     if args.submit_summary:
