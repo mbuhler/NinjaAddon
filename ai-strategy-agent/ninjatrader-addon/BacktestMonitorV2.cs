@@ -50,6 +50,14 @@ namespace NinjaTrader.Gui.AddOns
             set { enableHumanApproval = value; }
         }
 
+        [NinjaScriptProperty]
+        [Display(Name="Enable Redis Market Cache", Order=2, GroupName="Parameters")]
+        public bool EnableRedisMarketCache { get; set; } = true;
+
+        [NinjaScriptProperty]
+        [Display(Name="Cache TTL (seconds)", Order=3, GroupName="Parameters")]
+        public int CacheTtlSeconds { get; set; } = 7200;
+
         private TabControl tabControl;
         private ListBox historyListBox;
 
@@ -232,23 +240,27 @@ namespace NinjaTrader.Gui.AddOns
 
         private void OnMarketData(string instrument, MarketDataEventArgs args)
         {
-            if (db == null) return;
+            if (!EnableRedisMarketCache || db == null) return;
+
+            long timestamp = new DateTimeOffset(args.Time).ToUnixTimeMilliseconds();
+            string key = $"marketdata:{instrument}";
 
             var tick = new
             {
                 instrument = instrument,
-                timestamp = DateTime.UtcNow.ToString("o"),
-                lastPrice = args.Price,
+                timestamp = args.Time.ToString("o"),
+                price = args.Price,
+                volume = args.Volume,
                 bid = args.Bid,
-                ask = args.Ask,
-                volume = args.Volume
+                ask = args.Ask
             };
-
             string json = JsonConvert.SerializeObject(tick);
-            string key = $"tickstream:{instrument}";
 
-            db.ListLeftPushAsync(key, json);
-            db.ListTrimAsync(key, 0, 999);
+            db.SortedSetAddAsync(key, json, timestamp);
+
+            // This is a simplified way to remove old entries.
+            // A better solution would be to use a separate process to clean up old entries.
+            db.SortedSetRemoveRangeByScoreAsync(key, 0, timestamp - (CacheTtlSeconds * 1000));
         }
 
         private void StopStreaming(string instrument)
