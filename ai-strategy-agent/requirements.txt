@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+redis
+pydantic
+python-dotenv
+requests
+google-generativeai
+pytest
+mock

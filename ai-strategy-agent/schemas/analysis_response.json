@@ -1,0 +1,7 @@
+{
+  "summary": "Live PF dropped due to chop; slope near zero",
+  "suggestions": [
+    { "param": "KER_Threshold", "new_value": 0.35 },
+    { "action": "pause_trading", "duration": "60min" }
+  ]
+}
