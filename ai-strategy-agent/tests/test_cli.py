@@ -37,15 +37,23 @@ def setup_files():
         os.remove('logs/status_log.txt')
 
 
-def test_analyze_strategy_command(setup_files):
-    # This test will fail if the environment variables for the LLM are not set.
-    # We are mocking the prompt_engine to avoid this.
+def test_analyze_strategy_command_with_input_file(setup_files):
+    os.makedirs('strategy_input', exist_ok=True)
+    strategy_def = {"strategy_name": "ExternalStrategy", "version": "1.0", "entry_logic": "", "exit_logic": "", "filters": [], "tunable_parameters": []}
+    with open('strategy_input/strategy_definition.json', 'w') as f:
+        json.dump(strategy_def, f)
+
     with pytest.raises(subprocess.CalledProcessError):
         # This is expected to fail because the prompt engine is not mocked in a subprocess
         result = subprocess.run(["python", "cli.py", "--analyze-strategy"], check=True, capture_output=True, text=True)
         assert "Strategy analysis complete" in result.stdout
         assert os.path.exists('output/analysis_response.json')
         assert os.path.exists('logs/status_log.txt')
+        with open('logs/status_log.txt', 'r') as f:
+            log_content = f.read()
+            assert "ExternalStrategy" in log_content
+
+    os.remove('strategy_input/strategy_definition.json')
 
 def test_submit_summary_command(setup_files):
     # This requires a running Redis instance.

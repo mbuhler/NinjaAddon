@@ -20,6 +20,14 @@ class FeedbackTracker:
             writer = csv.writer(f)
             writer.writerow([timestamp, strategy_name, param_changed, old_value, new_value, None, None, None])
 
+    def log_invocation(self, strategy_name, llm_used, analysis_successful):
+        # This is not the ideal place for this log, but for simplicity we add it here.
+        # A better solution would be a separate log file for invocations.
+        timestamp = datetime.now().isoformat()
+        with open(self.log_file, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([timestamp, strategy_name, 'invocation', llm_used, analysis_successful, None, None, None])
+
     def score_feedback(self, timestamp: str, pf_delta: float, pnl: float) -> int:
         score = 0
         if pf_delta > 0.1 or pnl > 100:

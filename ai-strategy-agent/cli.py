@@ -7,12 +7,15 @@ from feedback_tracker import FeedbackTracker
 from redis_store import redis_store
 from schemas.models import StrategyDefinition, MarketSummary
 
-def log_status(action, success, model=None):
+def log_status(action, success, model=None, custom_message=None):
     timestamp = datetime.now().isoformat()
-    log_message = f"[{timestamp}] Action Triggered: {action} | Success: {success}"
-    if model:
-        log_message += f" | Model: {model}"
-    log_message += "\n"
+    if custom_message:
+        log_message = f"[{timestamp}] {custom_message}\n"
+    else:
+        log_message = f"[{timestamp}] Action Triggered: {action} | Success: {success}"
+        if model:
+            log_message += f" | Model: {model}"
+        log_message += "\n"
 
     os.makedirs('logs', exist_ok=True)
     with open('logs/status_log.txt', 'a') as f:
@@ -29,17 +32,43 @@ def get_sample_data(file_path, default_data):
 def analyze_strategy(args):
     action = "--analyze-strategy"
     model = os.getenv("MODEL", "openrouter/gpt-4")
+    strategy_file_path = './strategy_input/strategy_definition.json'
+
     try:
-        strategy_def_data = get_sample_data(
-            'sample_data/strategy_definition.json',
-            {"strategy_name": "DefaultStrategy", "version": "1.0", "entry_logic": "", "exit_logic": "", "filters": [], "tunable_parameters": []}
-        )
-        strategy_def = StrategyDefinition(**strategy_def_data)
+        if os.path.exists(strategy_file_path):
+            with open(strategy_file_path, 'r') as f:
+                strategy_def_data = json.load(f)
+        else:
+            print(f"Warning: {strategy_file_path} not found. Using sample data.")
+            strategy_def_data = get_sample_data(
+                'sample_data/strategy_definition.json',
+                {"strategy_name": "DefaultStrategy", "version": "1.0", "entry_logic": "", "exit_logic": "", "filters": [], "tunable_parameters": []}
+            )
+
+        # Validate schema
+        try:
+            strategy_def = StrategyDefinition(**strategy_def_data)
+        except Exception as e:
+            log_status(action, False, model)
+            print(f"Error: Invalid strategy definition schema: {e}")
+            return
 
         prompt_engine = PromptEngine()
+        feedback_tracker = FeedbackTracker()
 
-        # This is a simplified prompt for the CLI
-        prompt = f"Analyze strategy: {strategy_def.strategy_name}"
+        # Construct prompt
+        with open("prompt_templates/strategy_analysis.txt", "r") as f:
+            prompt_template = f.read()
+
+        prompt = prompt_template.replace("{{strategy_name}}", strategy_def.strategy_name)
+        prompt = prompt.replace("{{version}}", strategy_def.version)
+        prompt = prompt.replace("{{entry_logic}}", strategy_def.entry_logic)
+        prompt = prompt.replace("{{exit_logic}}", strategy_def.exit_logic)
+        prompt = prompt.replace("{{params}}", str(strategy_def.tunable_parameters))
+        # For CLI, we don't have live market data, so we'll use placeholders
+        prompt = prompt.replace("{{market_summary}}", "N/A")
+        prompt = prompt.replace("{{pf}}", "N/A")
+        prompt = prompt.replace("{{session}}", "N/A")
 
         analysis = prompt_engine.get_analysis(prompt, provider=os.getenv("PROVIDER", "openrouter"), model=model)
 
@@ -47,10 +76,23 @@ def analyze_strategy(args):
         with open('output/analysis_response.json', 'w') as f:
             json.dump(analysis.dict(), f, indent=2)
 
-        log_status(action, True, model)
+        summary_log = f"[OK] Analysis completed for {strategy_def.strategy_name} at {datetime.now().strftime('%H:%M')} — Suggestion: {analysis.summary}"
+        log_status(action, True, model, custom_message=summary_log)
+
+        feedback_tracker.log_invocation(
+            strategy_name=strategy_def.strategy_name,
+            llm_used=os.getenv("PROVIDER", "openrouter"),
+            analysis_successful=True
+        )
+
         print("Strategy analysis complete. See output/analysis_response.json")
     except Exception as e:
         log_status(action, False, model)
+        feedback_tracker.log_invocation(
+            strategy_name=strategy_def.strategy_name if 'strategy_def' in locals() else "Unknown",
+            llm_used=os.getenv("PROVIDER", "openrouter"),
+            analysis_successful=False
+        )
         print(f"Error during strategy analysis: {e}")
 
 
