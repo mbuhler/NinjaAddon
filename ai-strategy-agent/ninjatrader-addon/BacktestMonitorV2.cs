@@ -38,6 +38,18 @@ namespace NinjaTrader.Gui.AddOns
             }
         }
 
+        private Expander approvalExpander;
+        private TextBlock suggestionText;
+        private bool enableHumanApproval = true;
+
+        [NinjaScriptProperty]
+        [Display(Name="Enable Human Approval", Order=1, GroupName="Parameters")]
+        public bool EnableHumanApproval
+        {
+            get { return enableHumanApproval; }
+            set { enableHumanApproval = value; }
+        }
+
         protected override void OnWindowCreated(Control aControl)
         {
             var grid = new Grid();
@@ -59,9 +71,74 @@ namespace NinjaTrader.Gui.AddOns
             instrumentListBox = new ListBox();
             UpdateInstrumentList();
 
+            approvalExpander = new Expander
+            {
+                Header = "AI Suggestions",
+                IsExpanded = false,
+                Visibility = Visibility.Collapsed
+            };
+            var approvalPanel = new StackPanel();
+            suggestionText = new TextBlock { TextWrapping = TextWrapping.Wrap };
+            var approveButton = new Button { Content = "Approve" };
+            approveButton.Click += Approve_Click;
+            var rejectButton = new Button { Content = "Reject" };
+            rejectButton.Click += Reject_Click;
+            approvalPanel.Children.Add(suggestionText);
+            approvalPanel.Children.Add(approveButton);
+            approvalPanel.Children.Add(rejectButton);
+        }
+
+        private void Approve_Click(object sender, RoutedEventArgs e)
+        {
+        }
+
+        private void CheckForSuggestions()
+        {
+            try
+            {
+                string filePath = NinjaTrader.Core.Globals.UserDataDir + "output/analysis_response.json";
+                if (System.IO.File.Exists(filePath))
+                {
+                    string json = System.IO.File.ReadAllText(filePath);
+                    if (EnableHumanApproval)
+                    {
+                        suggestionText.Text = json;
+                        approvalExpander.Visibility = Visibility.Visible;
+                        approvalExpander.IsExpanded = true;
+                    }
+                    else
+                    {
+                        // Auto-approve
+                        Log("Auto-approving suggestion.", LogLevel.Info);
+                        // Apply the suggestion to the strategy here.
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log($"Error checking for suggestions: {e.Message}", LogLevel.Error);
+            }
+        }
+
+        private void Approve_Click(object sender, RoutedEventArgs e)
+        {
+            Log("Suggestion approved.", LogLevel.Info);
+            // Apply the suggestion to the strategy here.
+            approvalExpander.Visibility = Visibility.Collapsed;
+        }
+
+        private void Reject_Click(object sender, RoutedEventArgs e)
+        {
+            Log("Suggestion rejected.", LogLevel.Info);
+            approvalExpander.Visibility = Visibility.Collapsed;
+        }
+            approvalExpander.Content = approvalPanel;
+
             grid.Children.Add(topPanel);
             Grid.SetRow(instrumentListBox, 1);
             grid.Children.Add(instrumentListBox);
+            Grid.SetRow(approvalExpander, 2);
+            grid.Children.Add(approvalExpander);
 
             aControl.Content = grid;
         }
