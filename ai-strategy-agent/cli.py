@@ -31,6 +31,7 @@ def get_sample_data(file_path, default_data):
 
 import subprocess
 from param_extractor import extract_params
+from redis_memory import redis_agent_memory
 
 def analyze_strategy(args):
     action = "--analyze-strategy"
@@ -94,7 +95,18 @@ def analyze_strategy(args):
 
         prompt += f"\n\nFeedback History:\n{feedback_history}"
 
+        # Add context from memory
+        last_action = redis_agent_memory.get_memory(f"strategy:{strategy_def.strategy_name}:last_action")
+        if last_action:
+            prompt += f"\n\nLast Action:\n{last_action}"
+
         analysis = prompt_engine.get_analysis(prompt, provider=os.getenv("PROVIDER", "openrouter"), model=model)
+
+        # Store the analysis as the last action
+        redis_agent_memory.store_memory(
+            f"strategy:{strategy_def.strategy_name}:last_action",
+            json.dumps(analysis.dict())
+        )
 
         os.makedirs('output', exist_ok=True)
         with open('output/analysis_response.json', 'w') as f:

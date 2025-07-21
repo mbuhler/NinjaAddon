@@ -4,6 +4,7 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 from schemas.models import AnalysisResponse
 import json
+from llm_cache import llm_cache
 
 load_dotenv()
 
@@ -14,12 +15,15 @@ class PromptEngine:
         genai.configure(api_key=self.gemini_api_key)
 
     def get_analysis(self, prompt: str, provider: str, model: str) -> AnalysisResponse:
-        if provider == "openrouter":
-            return self._get_openrouter_analysis(prompt, model)
-        elif provider == "gemini":
-            return self._get_gemini_analysis(prompt, model)
-        else:
-            raise ValueError("Invalid provider specified.")
+        def analysis_generator():
+            if provider == "openrouter":
+                return self._get_openrouter_analysis(prompt, model)
+            elif provider == "gemini":
+                return self._get_gemini_analysis(prompt, model)
+            else:
+                raise ValueError("Invalid provider specified.")
+
+        return llm_cache.get_or_generate(prompt, model, analysis_generator)
 
     def _get_openrouter_analysis(self, prompt: str, model: str) -> AnalysisResponse:
         response = requests.post(
