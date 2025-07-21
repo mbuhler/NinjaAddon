@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-07-21T11:00:00",
+  "symbol": "SAMPLE",
+  "session": "RTH",
+  "avg_rvol": 1.0,
+  "kama_slope": 0.0,
+  "adx": 20,
+  "pf": 1.0,
+  "trades": 0,
+  "wins": 0,
+  "notes": "Sample market summary"
+}

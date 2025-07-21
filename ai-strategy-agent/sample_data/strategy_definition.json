@@ -1,0 +1,9 @@
+{
+  "strategy_name": "SampleStrategy",
+  "version": "1.0.0",
+  "entry_logic": "Sample entry logic",
+  "exit_logic": "Sample exit logic",
+  "filters": [],
+  "tunable_parameters": [],
+  "notes": "Sample strategy definition"
+}

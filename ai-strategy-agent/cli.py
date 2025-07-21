@@ -1,0 +1,104 @@
+import argparse
+import json
+import os
+from datetime import datetime
+from prompt_engine import PromptEngine
+from feedback_tracker import FeedbackTracker
+from redis_store import redis_store
+from schemas.models import StrategyDefinition, MarketSummary
+
+def log_status(action, success, model=None):
+    timestamp = datetime.now().isoformat()
+    log_message = f"[{timestamp}] Action Triggered: {action} | Success: {success}"
+    if model:
+        log_message += f" | Model: {model}"
+    log_message += "\n"
+
+    os.makedirs('logs', exist_ok=True)
+    with open('logs/status_log.txt', 'a') as f:
+        f.write(log_message)
+
+def get_sample_data(file_path, default_data):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    else:
+        print(f"Warning: {file_path} not found. Using default mock data.")
+        return default_data
+
+def analyze_strategy(args):
+    action = "--analyze-strategy"
+    model = os.getenv("MODEL", "openrouter/gpt-4")
+    try:
+        strategy_def_data = get_sample_data(
+            'sample_data/strategy_definition.json',
+            {"strategy_name": "DefaultStrategy", "version": "1.0", "entry_logic": "", "exit_logic": "", "filters": [], "tunable_parameters": []}
+        )
+        strategy_def = StrategyDefinition(**strategy_def_data)
+
+        prompt_engine = PromptEngine()
+
+        # This is a simplified prompt for the CLI
+        prompt = f"Analyze strategy: {strategy_def.strategy_name}"
+
+        analysis = prompt_engine.get_analysis(prompt, provider=os.getenv("PROVIDER", "openrouter"), model=model)
+
+        os.makedirs('output', exist_ok=True)
+        with open('output/analysis_response.json', 'w') as f:
+            json.dump(analysis.dict(), f, indent=2)
+
+        log_status(action, True, model)
+        print("Strategy analysis complete. See output/analysis_response.json")
+    except Exception as e:
+        log_status(action, False, model)
+        print(f"Error during strategy analysis: {e}")
+
+
+def submit_summary(args):
+    action = "--submit-summary"
+    try:
+        market_summary_data = get_sample_data(
+            'sample_data/market_summary.json',
+            {"timestamp": "2025-07-21T00:00:00", "symbol": "DEFAULT", "session": "RTH", "avg_rvol": 1.0, "kama_slope": 0, "adx": 0, "pf": 1, "trades": 0, "wins": 0}
+        )
+        market_summary = MarketSummary(**market_summary_data)
+
+        redis_store.post_market_summary(market_summary.symbol, market_summary.timestamp, market_summary.dict())
+        log_status(action, True)
+        print("Market summary submitted successfully.")
+    except Exception as e:
+        log_status(action, False)
+        print(f"Error submitting market summary: {e}")
+
+def evaluate_feedback(args):
+    action = "--evaluate-feedback"
+    try:
+        # This is a placeholder for the actual feedback evaluation logic
+        print("Evaluating feedback... (Not yet implemented)")
+        log_status(action, True)
+    except Exception as e:
+        log_status(action, False)
+        print(f"Error during feedback evaluation: {e}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="AI Strategy Companion CLI")
+    parser.add_argument("--analyze-strategy", action="store_true", help="Run strategy analysis")
+    parser.add_argument("--submit-summary", action="store_true", help="Submit market summary")
+    parser.add_argument("--evaluate-feedback", action="store_true", help="Evaluate feedback")
+
+    args = parser.parse_args()
+
+    if args.analyze_strategy:
+        analyze_strategy(args)
+
+    if args.submit_summary:
+        submit_summary(args)
+
+    if args.evaluate_feedback:
+        evaluate_feedback(args)
+
+if __name__ == "__main__":
+    # Change working directory to the script's directory
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    main()
