@@ -324,6 +324,30 @@ namespace NinjaTrader.Gui.AddOns
             // and displaying the results in memoryResultBox.
         }
 
+        private void ViewMemory_Click(object sender, RoutedEventArgs e)
+        {
+            // This is a placeholder for viewing the agent memory.
+        }
+
+        private void ResetMemory_Click(object sender, RoutedEventArgs e)
+        {
+            // This is a placeholder for resetting the agent memory.
+            MessageBox.Show("Are you sure you want to reset the agent memory for this strategy?", "Confirm Reset", MessageBoxButton.YesNo);
+        }
+
+        protected override void OnWindowCreated(Control aControl)
+        {
+            // ... (existing code) ...
+
+            // Agent Overrides Tab
+            var overridesTab = new TabItem { Header = "Agent Overrides" };
+            var overridesGrid = new Grid();
+            var overridesListBox = new ListBox();
+            overridesGrid.Children.Add(overridesListBox);
+            overridesTab.Content = overridesGrid;
+            tabControl.Items.Add(overridesTab);
+        }
+
         protected override void OnWindowCreated(Control aControl)
         {
             // ... (existing code) ...
@@ -334,13 +358,14 @@ namespace NinjaTrader.Gui.AddOns
             memoryGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Auto) });
             memoryGrid.RowDefinitions.Add(new RowDefinition());
 
-            var memoryQueryPanel = new StackPanel { Orientation = Orientation.Horizontal };
-            var memoryQueryInput = new TextBox { Width = 200 };
-            var memoryQueryButton = new Button { Content = "Query" };
-            memoryQueryButton.Click += MemoryQuery_Click;
-            memoryQueryPanel.Children.Add(memoryQueryInput);
-            memoryQueryPanel.Children.Add(memoryQueryButton);
-            memoryGrid.Children.Add(memoryQueryPanel);
+            var memoryButtonPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            var viewMemoryButton = new Button { Content = "View Agent Memory" };
+            viewMemoryButton.Click += ViewMemory_Click;
+            var resetMemoryButton = new Button { Content = "Reset Agent Memory" };
+            resetMemoryButton.Click += ResetMemory_Click;
+            memoryButtonPanel.Children.Add(viewMemoryButton);
+            memoryButtonPanel.Children.Add(resetMemoryButton);
+            memoryGrid.Children.Add(memoryButtonPanel);
 
             var memoryResultBox = new ListBox();
             Grid.SetRow(memoryResultBox, 1);
@@ -363,6 +388,20 @@ namespace NinjaTrader.Gui.AddOns
             // call to the Python script using a process.
             var history = GetHistoryFromChromaDB("current_strategy_id");
             historyListBox.ItemsSource = history;
+
+            // Update the overrides log
+            var overridesListBox = (ListBox)((Grid)((TabItem)tabControl.Items[3]).Content).Children[0];
+            overridesListBox.ItemsSource = GetOverridesLog();
+        }
+
+        private List<string> GetOverridesLog()
+        {
+            // Placeholder implementation
+            return new List<string>
+            {
+                "2025-07-21 14:00:00 | NQ | BLOCK_TRADE | Accepted | Low RVOL",
+                "2025-07-21 14:05:00 | NQ | SUGGEST_EXIT | Rejected | Rider",
+            };
         }
 
         private List<string> GetHistoryFromChromaDB(string strategyId)
