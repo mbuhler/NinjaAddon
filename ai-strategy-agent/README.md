@@ -40,6 +40,7 @@ The `cli.py` script provides a command-line interface for interacting with the A
 -   `--analyze-strategy`: Loads `sample_data/strategy_definition.json` and runs the prompt engine to analyze the strategy. The output is saved to `output/analysis_response.json`.
 -   `--submit-summary`: Posts market data from `sample_data/market_summary.json` to Redis.
 -   `--evaluate-feedback`: Runs the feedback tracker to evaluate outcomes on the existing feedback log.
+-   `--include-feedback-history`: Includes feedback history in the analysis.
 
 ### Example
 

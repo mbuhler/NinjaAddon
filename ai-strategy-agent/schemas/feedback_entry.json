@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "strategy_id": {
+      "type": "string"
+    },
+    "change_summary": {
+      "type": "object"
+    },
+    "performance_metrics": {
+      "type": "object"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "strategy_id",
+    "change_summary",
+    "performance_metrics",
+    "timestamp"
+  ]
+}

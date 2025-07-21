@@ -85,6 +85,15 @@ def analyze_strategy(args):
         prompt = prompt.replace("{{pf}}", "N/A")
         prompt = prompt.replace("{{session}}", "N/A")
 
+        feedback_history = ""
+        if args.include_feedback_history:
+            log_file = 'logs/feedback_log.jsonl'
+            if os.path.exists(log_file):
+                with open(log_file, 'r') as f:
+                    feedback_history = f.read()
+
+        prompt += f"\n\nFeedback History:\n{feedback_history}"
+
         analysis = prompt_engine.get_analysis(prompt, provider=os.getenv("PROVIDER", "openrouter"), model=model)
 
         os.makedirs('output', exist_ok=True)
@@ -144,6 +153,7 @@ def main():
     parser.add_argument("--strategy", help="Path to the C# strategy file to analyze.")
     parser.add_argument("--submit-summary", action="store_true", help="Submit market summary")
     parser.add_argument("--evaluate-feedback", action="store_true", help="Evaluate feedback")
+    parser.add_argument("--include-feedback-history", action="store_true", help="Include feedback history in analysis.")
 
     args = parser.parse_args()
 

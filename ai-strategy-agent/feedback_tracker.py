@@ -1,5 +1,7 @@
 import csv
 from datetime import datetime
+import os
+import json
 
 class FeedbackTracker:
     def __init__(self, log_file='logs/feedback_log.csv'):
@@ -39,3 +41,17 @@ class FeedbackTracker:
         # find the right row, and update it.
         print(f"Scoring feedback for timestamp {timestamp}: pf_delta={pf_delta}, pnl={pnl}, score={score}")
         return score
+
+    def append_feedback_event(self, strategy_id, change_summary, performance_metrics, timestamp):
+        log_file = 'logs/feedback_log.jsonl'
+        os.makedirs('logs', exist_ok=True)
+
+        feedback_event = {
+            "strategy_id": strategy_id,
+            "change_summary": change_summary,
+            "performance_metrics": performance_metrics,
+            "timestamp": timestamp
+        }
+
+        with open(log_file, 'a') as f:
+            f.write(json.dumps(feedback_event) + '\n')
