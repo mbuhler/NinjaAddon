@@ -96,16 +96,16 @@ def analyze_strategy(args):
         prompt += f"\n\nFeedback History:\n{feedback_history}"
 
         # Add context from memory
-        last_action = redis_agent_memory.get_memory(f"strategy:{strategy_def.strategy_name}:last_action")
-        if last_action:
-            prompt += f"\n\nLast Action:\n{last_action}"
+        recent_events = redis_agent_memory.get_recent_events(strategy_def.strategy_name)
+        if recent_events:
+            prompt += f"\n\nRecent Events:\n{json.dumps(recent_events, indent=2)}"
 
         analysis = prompt_engine.get_analysis(prompt, provider=os.getenv("PROVIDER", "openrouter"), model=model)
 
-        # Store the analysis as the last action
-        redis_agent_memory.store_memory(
-            f"strategy:{strategy_def.strategy_name}:last_action",
-            json.dumps(analysis.dict())
+        # Store the analysis as a new event
+        redis_agent_memory.store_event(
+            strategy_def.strategy_name,
+            {"event": "analysis", "details": analysis.dict()}
         )
 
         os.makedirs('output', exist_ok=True)

@@ -15,19 +15,25 @@ class RedisAgentMemory:
                 print("Warning: Redis is not available. Memory store will be disabled.")
                 self.enabled = False
 
-    def store_memory(self, key, value, ttl=None):
+    def store_event(self, strategy_id, event, ttl=None):
         if not self.enabled:
             return
+
+        key = f"memory:{strategy_id}"
+        value = json.dumps(event)
 
         if ttl is None:
             ttl = int(os.getenv("REDIS_TTL_MEMORY", 1800))
 
-        self.client.set(key, value, ex=ttl)
+        self.client.lpush(key, value)
+        self.client.ltrim(key, 0, 99) # Keep the last 100 events
 
-    def get_memory(self, key):
+    def get_recent_events(self, strategy_id, count=10):
         if not self.enabled:
-            return None
+            return []
 
-        return self.client.get(key)
+        key = f"memory:{strategy_id}"
+        events = self.client.lrange(key, 0, count - 1)
+        return [json.loads(event) for event in events]
 
 redis_agent_memory = RedisAgentMemory()

@@ -26,8 +26,10 @@ class LLMCache:
         cached_response = self.client.get(cache_key)
 
         if cached_response:
+            print(f"LLM Cache HIT for key: {cache_key}")
             return json.loads(cached_response)
         else:
+            print(f"LLM Cache MISS for key: {cache_key}")
             response = callback()
             self.client.set(
                 cache_key,
