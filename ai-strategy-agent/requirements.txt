@@ -7,3 +7,4 @@ requests
 google-generativeai
 pytest
 mock
+chromadb-client

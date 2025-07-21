@@ -2,6 +2,7 @@ import csv
 from datetime import datetime
 import os
 import json
+from chroma_interface import chroma_interface
 
 class FeedbackTracker:
     def __init__(self, log_file='logs/feedback_log.csv'):
@@ -55,3 +56,5 @@ class FeedbackTracker:
 
         with open(log_file, 'a') as f:
             f.write(json.dumps(feedback_event) + '\n')
+
+        chroma_interface.add_feedback_entry(strategy_id, feedback_event)

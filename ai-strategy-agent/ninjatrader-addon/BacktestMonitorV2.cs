@@ -50,14 +50,23 @@ namespace NinjaTrader.Gui.AddOns
             set { enableHumanApproval = value; }
         }
 
+        private TabControl tabControl;
+        private ListBox historyListBox;
+
         protected override void OnWindowCreated(Control aControl)
         {
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition());
             grid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Auto) });
             grid.RowDefinitions.Add(new RowDefinition());
-            grid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Auto) });
 
+            tabControl = new TabControl();
+
+            // Instrument Selector Tab
+            var instrumentTab = new TabItem { Header = "Instruments" };
+            var instrumentGrid = new Grid();
+            instrumentGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Auto) });
+            instrumentGrid.RowDefinitions.Add(new RowDefinition());
             var topPanel = new StackPanel { Orientation = Orientation.Horizontal };
             instrumentInput = new TextBox { Width = 100 };
             var addButton = new Button { Content = "Add" };
@@ -139,6 +148,16 @@ namespace NinjaTrader.Gui.AddOns
             grid.Children.Add(instrumentListBox);
             Grid.SetRow(approvalExpander, 2);
             grid.Children.Add(approvalExpander);
+
+            historyListBox = new ListBox();
+            var historyExpander = new Expander
+            {
+                Header = "AI History",
+                IsExpanded = false,
+                Content = historyListBox
+            };
+            Grid.SetRow(historyExpander, 3);
+            grid.Children.Add(historyExpander);
 
             aControl.Content = grid;
         }
@@ -237,8 +256,51 @@ namespace NinjaTrader.Gui.AddOns
             Log($"Stopping to stream {instrument}", LogLevel.Info);
         }
 
+        private System.Windows.Threading.DispatcherTimer historyUpdateTimer;
+
+        protected override void OnStateChange()
+        {
+            if (State == State.SetDefaults)
+            {
+                Name = "Backtest Monitor V2";
+                selectedInstruments = new List<string> { "ES ##-##", "NQ ##-##", "GC ##-##" };
+            }
+            else if (State == State.Configure)
+            {
+                // ... (existing code) ...
+                historyUpdateTimer = new System.Windows.Threading.DispatcherTimer();
+                historyUpdateTimer.Tick += new EventHandler(UpdateHistory);
+                historyUpdateTimer.Interval = new TimeSpan(0,0,10);
+                historyUpdateTimer.Start();
+            }
+        }
+
+        private void UpdateHistory(object sender, EventArgs e)
+        {
+            if (!EnableHumanApproval)
+            {
+                historyListBox.ItemsSource = new List<string> { "Human approval is disabled." };
+                return;
+            }
+
+            // This is a placeholder for calling the Python script to get the history.
+            // In a real implementation, this would be a call to a web service or a direct
+            // call to the Python script using a process.
+            var history = GetHistoryFromChromaDB("current_strategy_id");
+            historyListBox.ItemsSource = history;
+        }
+
+        private List<string> GetHistoryFromChromaDB(string strategyId)
+        {
+            // Placeholder implementation
+            return new List<string> { "No history yet." };
+        }
+
         protected override void OnTermination()
         {
+            if (historyUpdateTimer != null)
+                historyUpdateTimer.Stop();
+
             foreach(var instrument in selectedInstruments)
             {
                 StopStreaming(instrument);
