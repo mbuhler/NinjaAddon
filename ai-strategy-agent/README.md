@@ -77,5 +77,19 @@ You can use the `redis-cli` to inspect the data in Redis.
 
 ```bash
 # Get the last 10 ticks for NQ ##-##
-redis-cli lrange "tickstream:NQ ##-##" 0 9
+redis-cli zrevrange "marketdata:NQ" 0 9
 ```
+
+### Agent Decision Feed
+
+-   **Key Pattern:** `agent_decision_feed`
+-   **Type:** Channel
+-   **Value:** A JSON object with the following structure:
+    ```json
+    {
+      "strategy_id": "GC_1min_v7",
+      "action": "BLOCK_TRADE",
+      "reason": "Choppy overnight with low RVOL",
+      "timestamp": "2025-07-21T13:45:00"
+    }
+    ```

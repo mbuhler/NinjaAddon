@@ -21,6 +21,8 @@ namespace NinjaTrader.Gui.AddOns
         private ListBox instrumentListBox;
         private TextBox instrumentInput;
 
+        private ISubscriber subscriber;
+
         protected override void OnStateChange()
         {
             if (State == State.SetDefaults)
@@ -57,6 +59,10 @@ namespace NinjaTrader.Gui.AddOns
         [NinjaScriptProperty]
         [Display(Name="Cache TTL (seconds)", Order=3, GroupName="Parameters")]
         public int CacheTtlSeconds { get; set; } = 7200;
+
+        [NinjaScriptProperty]
+        [Display(Name="Enable Agent Override", Order=4, GroupName="Parameters")]
+        public bool EnableAgentOverride { get; set; } = true;
 
         private TabControl tabControl;
         private ListBox historyListBox;
@@ -284,7 +290,64 @@ namespace NinjaTrader.Gui.AddOns
                 historyUpdateTimer.Tick += new EventHandler(UpdateHistory);
                 historyUpdateTimer.Interval = new TimeSpan(0,0,10);
                 historyUpdateTimer.Start();
+
+                if (redis != null)
+                {
+                    subscriber = redis.GetSubscriber();
+                    subscriber.Subscribe("agent_decision_feed", (channel, message) => {
+                        HandleAgentDecision(message);
+                    });
+                }
             }
+        }
+
+        private void HandleAgentDecision(string message)
+        {
+            if (!EnableAgentOverride) return;
+
+            // In a real implementation, we would deserialize the JSON message
+            // and apply the decision to the strategy.
+            Log($"Received agent decision: {message}", LogLevel.Info);
+
+            // For now, we'll just display the decision in the approval panel.
+            if (EnableHumanApproval)
+            {
+                suggestionText.Text = message;
+                approvalExpander.Visibility = Visibility.Visible;
+                approvalExpander.IsExpanded = true;
+            }
+        }
+
+        private void MemoryQuery_Click(object sender, RoutedEventArgs e)
+        {
+            // This is a placeholder for querying ChromaDB
+            // and displaying the results in memoryResultBox.
+        }
+
+        protected override void OnWindowCreated(Control aControl)
+        {
+            // ... (existing code) ...
+
+            // Agent Memory Tab
+            var memoryTab = new TabItem { Header = "Agent Memory" };
+            var memoryGrid = new Grid();
+            memoryGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Auto) });
+            memoryGrid.RowDefinitions.Add(new RowDefinition());
+
+            var memoryQueryPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            var memoryQueryInput = new TextBox { Width = 200 };
+            var memoryQueryButton = new Button { Content = "Query" };
+            memoryQueryButton.Click += MemoryQuery_Click;
+            memoryQueryPanel.Children.Add(memoryQueryInput);
+            memoryQueryPanel.Children.Add(memoryQueryButton);
+            memoryGrid.Children.Add(memoryQueryPanel);
+
+            var memoryResultBox = new ListBox();
+            Grid.SetRow(memoryResultBox, 1);
+            memoryGrid.Children.Add(memoryResultBox);
+            memoryTab.Content = memoryGrid;
+
+            tabControl.Items.Add(memoryTab);
         }
 
         private void UpdateHistory(object sender, EventArgs e)
