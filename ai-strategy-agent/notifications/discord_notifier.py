@@ -20,22 +20,23 @@ def send_discord_message(type: str, content: str):
 
     @client.event
     async def on_ready():
-        channel = client.get_channel(channel_id)
-        if channel:
-            # Basic formatting based on type
-            if type == "trade_alert":
-                embed = discord.Embed(title="Trade Alert", description=content, color=0x00ff00)
-            elif type == "agent_override":
-                embed = discord.Embed(title="Agent Override", description=content, color=0xffa500)
-            elif type == "drawdown_warning":
-                embed = discord.Embed(title="Drawdown Warning", description=content, color=0xff0000)
-            elif type == "performance_update":
-                embed = discord.Embed(title="Performance Update", description=content, color=0x0000ff)
-            else:
-                embed = discord.Embed(title="General Notification", description=content, color=0x808080)
+        print(f'{client.user} has connected to Discord!')
 
-            await channel.send(embed=embed)
-        await client.close()
+    @client.event
+    async def on_message(message):
+        if message.author == client.user:
+            return
+
+        if isinstance(message.channel, discord.DMChannel):
+            # This is a placeholder for the actual query processing logic.
+            # A real implementation would parse the message, query the memory,
+            # and generate a response.
+            response = f"I received your message: '{message.content}'. I am not yet smart enough to answer your questions."
+            await message.channel.send(response)
+
+    # The existing send_discord_message functionality can be moved to a separate
+    # function or integrated into the on_ready event. For simplicity, we will
+    # leave it as is, but it will not be used in this new implementation.
 
     try:
         client.run(token)
