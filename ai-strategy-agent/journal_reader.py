@@ -41,6 +41,60 @@ def get_recommendation_counts(strategy_name: str) -> List[tuple]:
     counts = Counter(recommendations)
     return counts.most_common(5)
 
+def get_feedback_grades(strategy_name: str) -> dict:
+    """Gets the feedback grades for a given strategy."""
+
+    journal_dir = Path("journal") / strategy_name
+    if not journal_dir.exists():
+        return {"correct": 0, "wrong": 0, "neutral": 0, "timeline": []}
+
+    grades = {"correct": 0, "wrong": 0, "neutral": 0}
+    timeline = []
+    for file_path in sorted(journal_dir.glob("*.json")):
+        with open(file_path, 'r') as f:
+            entry = json.load(f)
+            rating = entry.get("feedback_rating")
+            if rating in grades:
+                grades[rating] += 1
+            timeline.append({
+                "timestamp": entry.get("timestamp"),
+                "rating": rating
+            })
+
+    return {"correct": grades["correct"], "wrong": grades["wrong"], "neutral": grades["neutral"], "timeline": timeline}
+
+def get_evolve_suggestions(strategy_name: str) -> dict:
+    """Gets strategy evolution suggestions based on recurring AI recommendations."""
+
+    journal_dir = Path("journal") / strategy_name
+    if not journal_dir.exists():
+        return {"suggested_changes": []}
+
+    recommendations = []
+    for file_path in journal_dir.glob("*.json"):
+        with open(file_path, 'r') as f:
+            entry = json.load(f)
+            if entry.get("feedback_rating") == "correct":
+                feedback = entry.get("ai_feedback", {})
+                recommendation = feedback.get("recommendation")
+                if recommendation:
+                    recommendations.append(recommendation)
+
+    counts = Counter(recommendations)
+
+    suggestions = []
+    for recommendation, count in counts.most_common():
+        if count >= 3:
+            # This is a placeholder for a more sophisticated logic to extract the parameter
+            # and the suggestion from the recommendation text.
+            suggestions.append({
+                "parameter": "unknown",
+                "suggestion": recommendation,
+                "based_on": f"{count} entries rated 'correct'"
+            })
+
+    return {"suggested_changes": suggestions}
+
 def get_session_timeline(strategy_name: str) -> List[dict]:
     """Gets the session timeline for a given strategy."""
 

@@ -26,7 +26,7 @@ from fastapi import HTTPException
 from pathlib import Path
 from schemas.models import StrategyAnalysisRequest
 from journal_writer import save_journal_entry
-from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline
+from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline, get_feedback_grades, get_evolve_suggestions
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -98,3 +98,13 @@ def rate_feedback(strategy_name: str, timestamp: str, rating: FeedbackRating):
 def get_timeline_endpoint(strategy_name: str):
     timeline = get_session_timeline(strategy_name)
     return timeline
+
+@app.get("/journal/feedback-grades/{strategy_name}")
+def get_feedback_grades_endpoint(strategy_name: str):
+    grades = get_feedback_grades(strategy_name)
+    return grades
+
+@app.get("/strategy/evolve-suggestions/{strategy_name}")
+def get_evolve_suggestions_endpoint(strategy_name: str):
+    suggestions = get_evolve_suggestions(strategy_name)
+    return suggestions
