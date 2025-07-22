@@ -87,7 +87,6 @@ namespace NinjaTrader.Gui.AddOns
         {
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition());
-            grid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Auto) });
             grid.RowDefinitions.Add(new RowDefinition());
 
             tabControl = new TabControl();
@@ -106,10 +105,15 @@ namespace NinjaTrader.Gui.AddOns
             topPanel.Children.Add(instrumentInput);
             topPanel.Children.Add(addButton);
             topPanel.Children.Add(removeButton);
+            instrumentGrid.Children.Add(topPanel);
 
             instrumentListBox = new ListBox();
             UpdateInstrumentList();
+            Grid.SetRow(instrumentListBox, 1);
+            instrumentGrid.Children.Add(instrumentListBox);
+            instrumentTab.Content = instrumentGrid;
 
+            // Approval Expander
             approvalExpander = new Expander
             {
                 Header = "AI Suggestions",
@@ -125,6 +129,60 @@ namespace NinjaTrader.Gui.AddOns
             approvalPanel.Children.Add(suggestionText);
             approvalPanel.Children.Add(approveButton);
             approvalPanel.Children.Add(rejectButton);
+            approvalExpander.Content = approvalPanel;
+
+            // AI History Tab
+            var historyTab = new TabItem { Header = "AI History" };
+            var historyGrid = new Grid();
+            historyListBox = new ListBox();
+            historyGrid.Children.Add(historyListBox);
+            historyTab.Content = historyGrid;
+
+            // Agent Overrides Tab
+            var overridesTab = new TabItem { Header = "Agent Overrides" };
+            var overridesGrid = new Grid();
+            redFlagIndicator = new TextBlock { Text = "🚩 RED FLAG 🚩", Foreground = Brushes.Red, FontWeight = FontWeights.Bold, Visibility = Visibility.Collapsed };
+            overridesGrid.Children.Add(redFlagIndicator);
+            var overridesListBox = new ListBox();
+            overridesGrid.Children.Add(overridesListBox);
+            overridesTab.Content = overridesGrid;
+
+            // Agent Memory Tab
+            var memoryTab = new TabItem { Header = "Agent Memory" };
+            var memoryGrid = new Grid();
+            memoryGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Auto) });
+            memoryGrid.RowDefinitions.Add(new RowDefinition());
+            var memoryButtonPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            var viewMemoryButton = new Button { Content = "View Agent Memory" };
+            viewMemoryButton.Click += ViewMemory_Click;
+            var resetMemoryButton = new Button { Content = "Reset Agent Memory" };
+            resetMemoryButton.Click += ResetMemory_Click;
+            memoryButtonPanel.Children.Add(viewMemoryButton);
+            memoryButtonPanel.Children.Add(resetMemoryButton);
+            memoryGrid.Children.Add(memoryButtonPanel);
+            var memoryResultBox = new ListBox();
+            Grid.SetRow(memoryResultBox, 1);
+            memoryGrid.Children.Add(memoryResultBox);
+            memoryTab.Content = memoryGrid;
+
+            // Learning Journal Tab
+            var journalTab = new TabItem { Header = "Learning Journal" };
+            var journalGrid = new Grid();
+            var journalListBox = new ListBox();
+            journalGrid.Children.Add(journalListBox);
+            journalTab.Content = journalGrid;
+
+            tabControl.Items.Add(instrumentTab);
+            tabControl.Items.Add(historyTab);
+            tabControl.Items.Add(overridesTab);
+            tabControl.Items.Add(memoryTab);
+            tabControl.Items.Add(journalTab);
+
+            grid.Children.Add(tabControl);
+            grid.Children.Add(approvalExpander);
+            Grid.SetRow(approvalExpander, 1);
+
+            aControl.Content = grid;
         }
 
         private void Approve_Click(object sender, RoutedEventArgs e)
@@ -243,11 +301,24 @@ namespace NinjaTrader.Gui.AddOns
                     redis = ConnectionMultiplexer.Connect("localhost");
                     db = redis.GetDatabase();
                     Log("Connected to Redis.", LogLevel.Info);
+
+                    if (redis != null)
+                    {
+                        subscriber = redis.GetSubscriber();
+                        subscriber.Subscribe("agent_decision_feed", (channel, message) => {
+                            HandleAgentDecision(message);
+                        });
+                    }
                 }
                 catch (Exception e)
                 {
                     Log($"Error connecting to Redis: {e.Message}", LogLevel.Error);
                 }
+
+                historyUpdateTimer = new System.Windows.Threading.DispatcherTimer();
+                historyUpdateTimer.Tick += new EventHandler(UpdateHistory);
+                historyUpdateTimer.Interval = new TimeSpan(0,0,10);
+                historyUpdateTimer.Start();
             }
         }
 
