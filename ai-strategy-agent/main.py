@@ -8,6 +8,10 @@ app = FastAPI()
 prompt_engine = PromptEngine()
 feedback_tracker = FeedbackTracker()
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
 @app.post("/api/strategy/init")
 def init_strategy(strategy_definition: StrategyDefinition):
     redis_store.set_strategy_definition(strategy_definition.strategy_name, strategy_definition.dict())

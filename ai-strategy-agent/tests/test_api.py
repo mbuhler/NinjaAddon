@@ -84,6 +84,11 @@ def test_analyze_strategy(mock_get_strategy, mock_get_summaries, mock_get_analys
     assert len(response_data["suggestions"]) == 1
     assert response_data["suggestions"][0]["param"] == "KER_Threshold"
 
+def test_health_check():
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "healthy"}
+
 @patch('main.redis_store.get_strategy_definition')
 def test_analyze_strategy_not_found(mock_get_strategy):
     mock_get_strategy.return_value = None
