@@ -395,17 +395,19 @@ namespace NinjaTrader.Gui.AddOns
 
         private ProgressBar signalStrengthBar;
 
+        private TextBlock patternClusterOverlay;
+
         protected override void OnWindowCreated(Control aControl)
         {
             // ... (existing code) ...
 
-            // Override Replay Console Tab
-            var replayTab = new TabItem { Header = "Override Replay" };
-            var replayGrid = new Grid();
-            var replayListBox = new ListBox();
-            replayGrid.Children.Add(replayListBox);
-            replayTab.Content = replayGrid;
-            tabControl.Items.Add(replayTab);
+            // Drill-Down Diagnostic Panel Tab
+            var diagnosticTab = new TabItem { Header = "Diagnostics" };
+            var diagnosticGrid = new Grid();
+            var diagnosticTextBox = new TextBox { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            diagnosticGrid.Children.Add(diagnosticTextBox);
+            diagnosticTab.Content = diagnosticGrid;
+            tabControl.Items.Add(diagnosticTab);
         }
 
         protected override void OnWindowCreated(Control aControl)
