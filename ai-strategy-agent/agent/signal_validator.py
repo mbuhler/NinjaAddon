@@ -1,5 +1,6 @@
 import time
 import os
+import json
 from redis_query import RedisQuery
 from chroma_interface import chroma_interface
 from agent.memory_context import MemoryContextBuilder
@@ -69,9 +70,8 @@ class SignalValidator:
         confidence_threshold = float(os.getenv("CONFIDENCE_THRESHOLD", 0.5))
 
         if confidence < confidence_threshold:
-            message = f"Signal for {self.instrument} rejected due to low confidence ({confidence:.2f})."
-            print(message)
-            send_discord_message("agent_override", message)
+            reason = f"Low confidence score ({confidence:.2f})"
+            self.log_rejection(reason)
             return
 
         # Adaptive Signal Throttling
@@ -85,6 +85,25 @@ class SignalValidator:
 
         self.redis_query.client.set(f"last_signal_time:{self.strategy_id}", time.time())
         print("Signal approved.")
+
+        # Auto-tagging system
+        tags = {
+            "strategy_name": self.strategy_id,
+            "timestamp": time.time(),
+            "signal_confidence": confidence,
+            "human_approval_status": True, # Placeholder
+            "ai_override_status": "approved",
+            "session_type": "RTH", # Placeholder
+            "pattern_match": "none", # Placeholder
+            "time_of_day_bias": "neutral", # Placeholder
+            "risk_sentiment": "neutral", # Placeholder
+            "volume_context": "normal" # Placeholder
+        }
+
+        # Persist tags
+        self.redis_query.client.lpush(f"trade_tags:{self.strategy_id}", json.dumps(tags))
+        chroma_interface.add_feedback_entry(self.strategy_id, tags, "RTH", 0) # Placeholder learning score
+        send_discord_message("trade_alert", f"New trade for {self.strategy_id}: {tags}")
 
         # Red Flag Escalation System
         # This is a placeholder for a more sophisticated anomaly detection logic.
@@ -109,6 +128,16 @@ class SignalValidator:
             # In a real implementation, we would send a message to the Add-On
             # to pause the strategy.
             return # Stop processing signals
+
+    def log_rejection(self, reason):
+        message = f"Signal for {self.instrument} rejected: {reason}"
+        print(message)
+        send_discord_message("agent_override", message)
+
+        # Log to Redis
+        self.redis_query.client.lpush(f"rejection_log:{self.strategy_id}", message)
+
+        # In a real implementation, we would also update the UI.
 
 if __name__ == "__main__":
     # Example usage
