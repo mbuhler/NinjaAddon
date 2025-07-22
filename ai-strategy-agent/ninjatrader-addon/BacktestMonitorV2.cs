@@ -15,6 +15,9 @@ using Newtonsoft.Json;
 
 namespace NinjaTrader.Gui.AddOns
 {
+    /// <summary>
+    /// A NinjaTrader Add-On to monitor and compare live vs backtest performance.
+    /// </summary>
     public class BacktestMonitorV2 : AddOnBase
     {
         private List<string> selectedInstruments = new List<string>();
@@ -187,34 +190,9 @@ namespace NinjaTrader.Gui.AddOns
 
         private void Approve_Click(object sender, RoutedEventArgs e)
         {
-        }
-
-        private void CheckForSuggestions()
-        {
-            try
-            {
-                string filePath = NinjaTrader.Core.Globals.UserDataDir + "output/analysis_response.json";
-                if (System.IO.File.Exists(filePath))
-                {
-                    string json = System.IO.File.ReadAllText(filePath);
-                    if (EnableHumanApproval)
-                    {
-                        suggestionText.Text = json;
-                        approvalExpander.Visibility = Visibility.Visible;
-                        approvalExpander.IsExpanded = true;
-                    }
-                    else
-                    {
-                        // Auto-approve
-                        Log("Auto-approving suggestion.", LogLevel.Info);
-                        // Apply the suggestion to the strategy here.
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log($"Error checking for suggestions: {e.Message}", LogLevel.Error);
-            }
+            Log("Suggestion approved.", LogLevel.Info);
+            // Apply the suggestion to the strategy here.
+            approvalExpander.Visibility = Visibility.Collapsed;
         }
 
         private void Approve_Click(object sender, RoutedEventArgs e)
