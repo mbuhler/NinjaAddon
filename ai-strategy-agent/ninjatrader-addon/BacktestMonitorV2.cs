@@ -76,6 +76,10 @@ namespace NinjaTrader.Gui.AddOns
         [Display(Name="Confidence Threshold", Order=7, GroupName="Parameters")]
         public double ConfidenceThreshold { get; set; } = 0.5;
 
+        [NinjaScriptProperty]
+        [Display(Name="Enable Auto-Pause Safeguards", Order=8, GroupName="Parameters")]
+        public bool EnableAutoPauseSafeguards { get; set; } = true;
+
         private TabControl tabControl;
         private ListBox historyListBox;
 
@@ -394,20 +398,16 @@ namespace NinjaTrader.Gui.AddOns
         }
 
         private ProgressBar signalStrengthBar;
-
+        private TextBlock redFlagIndicator;
         private TextBlock patternClusterOverlay;
 
         protected override void OnWindowCreated(Control aControl)
         {
             // ... (existing code) ...
 
-            // Drill-Down Diagnostic Panel Tab
-            var diagnosticTab = new TabItem { Header = "Diagnostics" };
-            var diagnosticGrid = new Grid();
-            var diagnosticTextBox = new TextBox { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-            diagnosticGrid.Children.Add(diagnosticTextBox);
-            diagnosticTab.Content = diagnosticGrid;
-            tabControl.Items.Add(diagnosticTab);
+            var overridesGrid = (Grid)((TabItem)tabControl.Items[3]).Content;
+            redFlagIndicator = new TextBlock { Text = "🚩 RED FLAG 🚩", Foreground = Brushes.Red, FontWeight = FontWeights.Bold, Visibility = Visibility.Collapsed };
+            overridesGrid.Children.Add(redFlagIndicator);
         }
 
         protected override void OnWindowCreated(Control aControl)

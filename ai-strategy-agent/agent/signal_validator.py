@@ -69,8 +69,39 @@ class SignalValidator:
 
         if confidence < confidence_threshold:
             print("Signal rejected due to low confidence.")
-        else:
-            print("Signal approved.")
+            return
+
+        # Adaptive Signal Throttling
+        # This is a placeholder for a more sophisticated throttling logic.
+        last_signal_time = self.redis_query.get_latest_price(f"last_signal_time:{self.strategy_id}")
+        if last_signal_time:
+            time_since_last_signal = time.time() - float(last_signal_time)
+            if time_since_last_signal < 60: # Throttle signals to one per minute
+                print("Signal throttled.")
+                return
+
+        self.redis_query.client.set(f"last_signal_time:{self.strategy_id}", time.time())
+        print("Signal approved.")
+
+        # Red Flag Escalation System
+        # This is a placeholder for a more sophisticated anomaly detection logic.
+        pnl_streak = self.redis_query.get_latest_price(f"pnl_streak:{self.strategy_id}")
+        if pnl_streak and int(pnl_streak) < -3:
+            print("RED FLAG: Poor PnL streak detected.")
+            # In a real implementation, we would send a message to the Add-On
+            # to display the red flag indicator.
+
+        # Strategy Failure Safeguards
+        # This is a placeholder for a more sophisticated safeguard logic.
+        # In a real implementation, we would get this setting from the Add-On.
+        enable_auto_pause = True
+
+        drawdown = self.redis_query.get_latest_price(f"drawdown:{self.strategy_id}")
+        if enable_auto_pause and drawdown and float(drawdown) > 1000:
+            print("SAFEGUARD: Strategy paused due to excessive drawdown.")
+            # In a real implementation, we would send a message to the Add-On
+            # to pause the strategy.
+            return # Stop processing signals
 
 if __name__ == "__main__":
     # Example usage
