@@ -53,8 +53,14 @@ class SignalValidator:
             # A simple check if there is any similar feedback
             score += 1
 
+        # Market regime awareness
+        # This is a placeholder for a more sophisticated market regime detection logic.
+        market_regime = "trending" # or "choppy", "volatile"
+        if market_regime == "trending":
+            score += 1
+
         # Confidence score
-        confidence = score / 3.0 # 3 is the max possible score in this simplified logic
+        confidence = score / 4.0 # 4 is the max possible score in this simplified logic
 
         print(f"Validating signal: {signal}")
         print(f"Confidence score: {confidence:.2f}")

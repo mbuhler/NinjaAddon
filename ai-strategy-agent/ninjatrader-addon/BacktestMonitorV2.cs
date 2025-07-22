@@ -346,6 +346,13 @@ namespace NinjaTrader.Gui.AddOns
                 if (decision.confidence.HasValue)
                 {
                     signalStrengthBar.Value = decision.confidence.Value;
+
+                    // Placeholder for dynamic position sizing
+                    if (decision.confidence.Value < 0.5)
+                    {
+                        Log("Low confidence signal. Suggesting reduced position size.", LogLevel.Info);
+                        // In a real implementation, we would adjust the strategy's position size here.
+                    }
                 }
             }
             catch (Exception e)
