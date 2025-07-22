@@ -55,3 +55,12 @@ async def analyze_strategy(data: StrategyAnalysisRequest):
     logger.info(f"Journal saved to {journal_path}")
 
     return ai_feedback
+
+@app.get("/journal/summary/{strategy_name}")
+def get_journal_summary(strategy_name: str):
+    recent_entries = load_recent_journal_entries(strategy_name, n=1)
+    if not recent_entries:
+        return {"last_context_used": "No memory context found."}
+
+    last_context_used = recent_entries[0].get("context_used", "No memory context found.")
+    return {"last_context_used": last_context_used}

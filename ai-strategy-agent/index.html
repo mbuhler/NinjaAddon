@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Strategy Companion</title>
+</head>
+<body>
+    <h1>AI Strategy Companion</h1>
+
+    <div id="memoryContextContainer">
+      <h2>AI Memory Context</h2>
+      <pre id="memoryContext">Loading...</pre>
+    </div>
+
+    <script>
+        async function fetchMemoryContext() {
+            const strategyName = "AllWeather_NQ_v38"; // Example strategy name
+            const response = await fetch(`/journal/summary/${strategyName}`);
+            const data = await response.json();
+            document.getElementById("memoryContext").textContent = data.last_context_used;
+        }
+
+        fetchMemoryContext();
+    </script>
+</body>
+</html>
