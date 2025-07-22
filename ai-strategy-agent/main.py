@@ -24,7 +24,7 @@ def post_summary(market_summary: MarketSummary):
 
 from schemas.models import StrategyAnalysisRequest
 from journal_writer import save_journal_entry
-from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt
+from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -64,3 +64,8 @@ def get_journal_summary(strategy_name: str):
 
     last_context_used = recent_entries[0].get("context_used", "No memory context found.")
     return {"last_context_used": last_context_used}
+
+@app.get("/journal/recommendation-counts/{strategy_name}")
+def get_recommendation_counts_endpoint(strategy_name: str):
+    counts = get_recommendation_counts(strategy_name)
+    return {"strategy_name": strategy_name, "recommendation_counts": counts}

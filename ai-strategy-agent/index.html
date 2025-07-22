@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>AI Strategy Companion</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>AI Strategy Companion</h1>
@@ -9,6 +10,11 @@
     <div id="memoryContextContainer">
       <h2>AI Memory Context</h2>
       <pre id="memoryContext">Loading...</pre>
+    </div>
+
+    <div>
+        <h2>Recommendation Counts</h2>
+        <canvas id="recChart"></canvas>
     </div>
 
     <script>
@@ -19,7 +25,30 @@
             document.getElementById("memoryContext").textContent = data.last_context_used;
         }
 
+        async function fetchRecommendationCounts() {
+            const strategyName = "AllWeather_NQ_v38"; // Example strategy name
+            const response = await fetch(`/journal/recommendation-counts/${strategyName}`);
+            const data = await response.json();
+
+            const labels = data.recommendation_counts.map(item => item[0]);
+            const counts = data.recommendation_counts.map(item => item[1]);
+
+            const ctx = document.getElementById('recChart').getContext('2d');
+            new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: 'Frequency',
+                  data: counts,
+                  backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                }]
+              }
+            });
+        }
+
         fetchMemoryContext();
+        fetchRecommendationCounts();
     </script>
 </body>
 </html>

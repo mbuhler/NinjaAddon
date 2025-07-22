@@ -20,6 +20,27 @@ def format_journal_entries_for_prompt(entries: List[dict]) -> str:
 
     return memory_block
 
+from collections import Counter
+
+def get_recommendation_counts(strategy_name: str) -> List[tuple]:
+    """Gets the top recommendations and their frequency counts for a given strategy."""
+
+    journal_dir = Path("journal") / strategy_name
+    if not journal_dir.exists():
+        return []
+
+    recommendations = []
+    for file_path in journal_dir.glob("*.json"):
+        with open(file_path, 'r') as f:
+            entry = json.load(f)
+            feedback = entry.get("ai_feedback", {})
+            recommendation = feedback.get("recommendation")
+            if recommendation:
+                recommendations.append(recommendation)
+
+    counts = Counter(recommendations)
+    return counts.most_common(5)
+
 def load_recent_journal_entries(strategy_name: str, n: int = 5) -> List[dict]:
     """Loads the N most recent journal entries for a given strategy."""
 
