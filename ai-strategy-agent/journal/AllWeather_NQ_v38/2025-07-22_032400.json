@@ -1,0 +1,25 @@
+{
+  "strategy_name": "AllWeather_NQ_v38",
+  "timestamp": "2025-07-22T03:24:00.000000",
+  "input": {
+    "strategy_name": "AllWeather_NQ_v38",
+    "date": "2025-07-22",
+    "trades": [
+      {
+        "entry_time": "2025-07-22T09:31:12",
+        "exit_time": "2025-07-22T09:34:55",
+        "entry_price": 18450.75,
+        "exit_price": 18463.25,
+        "qty": 2,
+        "side": "long",
+        "pnl": 250.0,
+        "session": "RTH"
+      }
+    ]
+  },
+  "ai_feedback": {
+    "summary": "Live performance shows a lower win rate overnight.",
+    "confidence_score": 0.87,
+    "recommendation": "Consider tightening ATR filter or skipping trades before 9:00am."
+  }
+}

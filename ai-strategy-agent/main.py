@@ -23,13 +23,23 @@ def post_summary(market_summary: MarketSummary):
     return {"message": "Market summary posted successfully."}
 
 from schemas.models import StrategyAnalysisRequest
+from journal_writer import save_journal_entry
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @app.post("/analyze/strategy")
 async def analyze_strategy(data: StrategyAnalysisRequest):
     # In a real implementation, we would use a CrewAI agent here.
     # For now, we'll just return a mock response.
-    return {
+    ai_feedback = {
       "summary": "Live performance shows a lower win rate overnight.",
       "confidence_score": 0.87,
       "recommendation": "Consider tightening ATR filter or skipping trades before 9:00am."
     }
+
+    journal_path = save_journal_entry(data.strategy_name, data.dict(), ai_feedback)
+    logger.info(f"Journal saved to {journal_path}")
+
+    return ai_feedback
