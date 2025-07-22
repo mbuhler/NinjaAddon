@@ -9,6 +9,8 @@ using NinjaTrader.Gui.AddOns;
 using NinjaTrader.Core.Globals;
 using NinjaTrader.Data;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
 using StackExchange.Redis;
 using Newtonsoft.Json;
 #endregion
@@ -429,6 +431,33 @@ namespace NinjaTrader.Gui.AddOns
             public string outcome { get; set; }
         }
 
+        // Payload for sending data to the backend
+        public class StrategyPayload
+        {
+            public string strategy_name { get; set; }
+            public string date { get; set; }
+            public List<Trade> trades { get; set; }
+        }
+        public class Trade
+        {
+            public string entry_time { get; set; }
+            public string exit_time { get; set; }
+            public double entry_price { get; set; }
+            public double exit_price { get; set; }
+            public int qty { get; set; }
+            public string side { get; set; }
+            public double pnl { get; set; }
+            public string session { get; set; }
+        }
+
+        // Response from the backend
+        public class AnalysisResponse
+        {
+            public string summary { get; set; }
+            public double confidence_score { get; set; }
+            public string recommendation { get; set; }
+        }
+
         private void MemoryQuery_Click(object sender, RoutedEventArgs e)
         {
             // This is a placeholder for querying ChromaDB
@@ -444,6 +473,59 @@ namespace NinjaTrader.Gui.AddOns
         {
             // This is a placeholder for resetting the agent memory.
             MessageBox.Show("Are you sure you want to reset the agent memory for this strategy?", "Confirm Reset", MessageBoxButton.YesNo);
+        }
+
+        private async void SendPayloadToBackend()
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    string payload = GetStrategyPayload();
+                    var content = new StringContent(payload, Encoding.UTF8, "application/json");
+                    HttpResponseMessage response = await client.PostAsync("http://localhost:8000/analyze/strategy", content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        var analysisResponse = JsonConvert.DeserializeObject<AnalysisResponse>(responseBody);
+
+                        // Display the response in the UI
+                        string responseText = $"Summary: {analysisResponse.summary}\n" +
+                                              $"Confidence Score: {analysisResponse.confidence_score}\n" +
+                                              $"Recommendation: {analysisResponse.recommendation}";
+                        suggestionText.Text = responseText;
+                        approvalExpander.Visibility = Visibility.Visible;
+                        approvalExpander.IsExpanded = true;
+                    }
+                    else
+                    {
+                        Log($"Error sending payload to backend: {response.StatusCode}", LogLevel.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Error sending payload to backend: {ex.Message}", LogLevel.Error);
+            }
+        }
+
+        private string GetStrategyPayload()
+        {
+            // This is a placeholder for gathering the trade data.
+            var trades = new List<Trade>
+            {
+                new Trade { entry_time = "2025-07-22T09:31:12", exit_time = "2025-07-22T09:34:55", entry_price = 18450.75, exit_price = 18463.25, qty = 2, side = "long", pnl = 250.0, session = "RTH" }
+            };
+
+            var payload = new StrategyPayload
+            {
+                strategy_name = "AllWeather_NQ_v38",
+                date = DateTime.Now.ToString("yyyy-MM-dd"),
+                trades = trades
+            };
+
+            return JsonConvert.SerializeObject(payload);
         }
 
         private ProgressBar signalStrengthBar;

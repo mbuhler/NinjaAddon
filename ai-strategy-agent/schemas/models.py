@@ -41,3 +41,18 @@ class Suggestion(BaseModel):
 class AnalysisResponse(BaseModel):
     summary: str
     suggestions: List[Suggestion]
+
+class Trade(BaseModel):
+    entry_time: str
+    exit_time: str
+    entry_price: float
+    exit_price: float
+    qty: int
+    side: str
+    pnl: float
+    session: str
+
+class StrategyAnalysisRequest(BaseModel):
+    strategy_name: str
+    date: str
+    trades: List[Trade]

@@ -1,0 +1,16 @@
+{
+  "strategy_name": "AllWeather_NQ_v38",
+  "date": "2025-07-22",
+  "trades": [
+    {
+      "entry_time": "2025-07-22T09:31:12",
+      "exit_time": "2025-07-22T09:34:55",
+      "entry_price": 18450.75,
+      "exit_price": 18463.25,
+      "qty": 2,
+      "side": "long",
+      "pnl": 250.0,
+      "session": "RTH"
+    }
+  ]
+}
