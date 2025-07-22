@@ -102,7 +102,16 @@ class SignalValidator:
 
         # Persist tags
         self.redis_query.client.lpush(f"trade_tags:{self.strategy_id}", json.dumps(tags))
-        chroma_interface.add_feedback_entry(self.strategy_id, tags, "RTH", 0) # Placeholder learning score
+
+        # AI Feedback Loop Enhancer
+        # This is a placeholder for a more sophisticated feedback loop.
+        enriched_feedback = tags.copy()
+        enriched_feedback["pnl"] = 100 # Placeholder
+        enriched_feedback["exit_reason"] = "target" # Placeholder
+
+        learning_score = 0.9 # Placeholder
+
+        chroma_interface.add_feedback_entry(self.strategy_id, enriched_feedback, "RTH", learning_score)
         send_discord_message("trade_alert", f"New trade for {self.strategy_id}: {tags}")
 
         # Red Flag Escalation System

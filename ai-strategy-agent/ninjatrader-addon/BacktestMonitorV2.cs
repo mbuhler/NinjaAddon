@@ -405,9 +405,13 @@ namespace NinjaTrader.Gui.AddOns
         {
             // ... (existing code) ...
 
-            var overridesGrid = (Grid)((TabItem)tabControl.Items[3]).Content;
-            redFlagIndicator = new TextBlock { Text = "🚩 RED FLAG 🚩", Foreground = Brushes.Red, FontWeight = FontWeights.Bold, Visibility = Visibility.Collapsed };
-            overridesGrid.Children.Add(redFlagIndicator);
+            // Learning Journal Tab
+            var journalTab = new TabItem { Header = "Learning Journal" };
+            var journalGrid = new Grid();
+            var journalListBox = new ListBox();
+            journalGrid.Children.Add(journalListBox);
+            journalTab.Content = journalGrid;
+            tabControl.Items.Add(journalTab);
         }
 
         protected override void OnWindowCreated(Control aControl)
@@ -460,6 +464,9 @@ namespace NinjaTrader.Gui.AddOns
 
             // Update the override replay
             UpdateOverrideReplay();
+
+            // Update the learning journal
+            UpdateLearningJournal();
         }
 
         private List<string> GetOverridesLog()
@@ -501,6 +508,22 @@ namespace NinjaTrader.Gui.AddOns
             {
                 "Override 1: Agent blocked long entry. Strategy would have lost $100. (Good veto)",
                 "Override 2: Agent suggested exit. Strategy would have made $50 more. (Bad veto)",
+            };
+        }
+
+        private void UpdateLearningJournal()
+        {
+            var journalListBox = (ListBox)((Grid)((TabItem)tabControl.Items[6]).Content).Children[0];
+            journalListBox.ItemsSource = GetLearningJournal();
+        }
+
+        private List<string> GetLearningJournal()
+        {
+            // Placeholder implementation
+            return new List<string>
+            {
+                "2025-07-22 00:30:00 | Pattern A | Approved | +$100 | AI: 'High confidence due to volume confirmation.'",
+                "2025-07-22 00:35:00 | Pattern B | Rejected | -$50 | AI: 'Low confidence due to conflicting trend.'",
             };
         }
 
