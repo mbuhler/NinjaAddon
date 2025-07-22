@@ -1,6 +1,7 @@
 import chromadb
 from chromadb.utils import embedding_functions
 import os
+from datetime import datetime, timezone
 
 class ChromaInterface:
     def __init__(self):
@@ -46,6 +47,14 @@ class ChromaInterface:
             n_results=top_k,
             where=where_clause
         )
+
+        # Apply a simple time-based decay to the learning score
+        for i, metadata in enumerate(results['metadatas'][0]):
+            timestamp = datetime.fromisoformat(metadata['timestamp'].replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - timestamp).total_seconds()
+            decay_factor = 0.99 ** (age / 3600) # Decay per hour
+            results['metadatas'][0][i]['learning_score'] *= decay_factor
+
         return results
 
     def _format_document(self, payload):

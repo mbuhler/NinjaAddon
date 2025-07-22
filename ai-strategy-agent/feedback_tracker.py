@@ -43,7 +43,7 @@ class FeedbackTracker:
         print(f"Scoring feedback for timestamp {timestamp}: pf_delta={pf_delta}, pnl={pnl}, score={score}")
         return score
 
-    def append_feedback_event(self, strategy_id, change_summary, performance_metrics, timestamp):
+    def append_feedback_event(self, strategy_id, change_summary, performance_metrics, timestamp, veto_score=None):
         log_file = 'logs/feedback_log.jsonl'
         os.makedirs('logs', exist_ok=True)
 
@@ -51,10 +51,14 @@ class FeedbackTracker:
             "strategy_id": strategy_id,
             "change_summary": change_summary,
             "performance_metrics": performance_metrics,
-            "timestamp": timestamp
+            "timestamp": timestamp,
+            "veto_score": veto_score
         }
 
         with open(log_file, 'a') as f:
             f.write(json.dumps(feedback_event) + '\n')
 
-        chroma_interface.add_feedback_entry(strategy_id, feedback_event)
+        # The learning score will be a combination of the veto score and other factors
+        learning_score = veto_score if veto_score is not None else 0
+
+        chroma_interface.add_feedback_entry(strategy_id, feedback_event, "RTH", learning_score)

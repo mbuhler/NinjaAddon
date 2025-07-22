@@ -313,17 +313,40 @@ namespace NinjaTrader.Gui.AddOns
         {
             if (!EnableAgentOverride) return;
 
-            // In a real implementation, we would deserialize the JSON message
-            // and apply the decision to the strategy.
             Log($"Received agent decision: {message}", LogLevel.Info);
 
-            // For now, we'll just display the decision in the approval panel.
             if (EnableHumanApproval)
             {
-                suggestionText.Text = message;
-                approvalExpander.Visibility = Visibility.Visible;
-                approvalExpander.IsExpanded = true;
+                try
+                {
+                    var decision = JsonConvert.DeserializeObject<AgentDecision>(message);
+                    string explanation = $"Decision: {decision.decision}\n" +
+                                         $"Reason: {decision.reason}\n" +
+                                         $"Risks: {decision.risks}\n" +
+                                         $"Memory Match: {decision.memoryMatch.similarCase} (Outcome: {decision.memoryMatch.outcome})";
+                    suggestionText.Text = explanation;
+                    approvalExpander.Visibility = Visibility.Visible;
+                    approvalExpander.IsExpanded = true;
+                }
+                catch (Exception e)
+                {
+                    Log($"Error parsing agent decision: {e.Message}", LogLevel.Error);
+                }
             }
+        }
+
+        // A simple class to represent the agent's decision
+        public class AgentDecision
+        {
+            public string decision { get; set; }
+            public string reason { get; set; }
+            public string risks { get; set; }
+            public MemoryMatch memoryMatch { get; set; }
+        }
+        public class MemoryMatch
+        {
+            public string similarCase { get; set; }
+            public string outcome { get; set; }
         }
 
         private void MemoryQuery_Click(object sender, RoutedEventArgs e)
@@ -347,13 +370,13 @@ namespace NinjaTrader.Gui.AddOns
         {
             // ... (existing code) ...
 
-            // Agent Overrides Tab
-            var overridesTab = new TabItem { Header = "Agent Overrides" };
-            var overridesGrid = new Grid();
-            var overridesListBox = new ListBox();
-            overridesGrid.Children.Add(overridesListBox);
-            overridesTab.Content = overridesGrid;
-            tabControl.Items.Add(overridesTab);
+            // Override Replay Console Tab
+            var replayTab = new TabItem { Header = "Override Replay" };
+            var replayGrid = new Grid();
+            var replayListBox = new ListBox();
+            replayGrid.Children.Add(replayListBox);
+            replayTab.Content = replayGrid;
+            tabControl.Items.Add(replayTab);
         }
 
         protected override void OnWindowCreated(Control aControl)
@@ -400,6 +423,12 @@ namespace NinjaTrader.Gui.AddOns
             // Update the overrides log
             var overridesListBox = (ListBox)((Grid)((TabItem)tabControl.Items[3]).Content).Children[0];
             overridesListBox.ItemsSource = GetOverridesLog();
+
+            // Update the trade memory
+            UpdateTradeMemory();
+
+            // Update the override replay
+            UpdateOverrideReplay();
         }
 
         private List<string> GetOverridesLog()
@@ -409,6 +438,38 @@ namespace NinjaTrader.Gui.AddOns
             {
                 "2025-07-21 14:00:00 | NQ | BLOCK_TRADE | Accepted | Low RVOL",
                 "2025-07-21 14:05:00 | NQ | SUGGEST_EXIT | Rejected | Rider",
+            };
+        }
+
+        private void UpdateTradeMemory()
+        {
+            var tradeMemoryListBox = (ListBox)((Grid)((TabItem)tabControl.Items[4]).Content).Children[0];
+            tradeMemoryListBox.ItemsSource = GetTradeMemory();
+        }
+
+        private List<string> GetTradeMemory()
+        {
+            // Placeholder implementation
+            return new List<string>
+            {
+                "Trade 1: +$50, RTH, High Volume",
+                "Trade 2: -$25, Overnight, Low Volume (Agent Flagged)",
+            };
+        }
+
+        private void UpdateOverrideReplay()
+        {
+            var replayListBox = (ListBox)((Grid)((TabItem)tabControl.Items[5]).Content).Children[0];
+            replayListBox.ItemsSource = GetOverrideReplay();
+        }
+
+        private List<string> GetOverrideReplay()
+        {
+            // Placeholder implementation
+            return new List<string>
+            {
+                "Override 1: Agent blocked long entry. Strategy would have lost $100. (Good veto)",
+                "Override 2: Agent suggested exit. Strategy would have made $50 more. (Bad veto)",
             };
         }
 
