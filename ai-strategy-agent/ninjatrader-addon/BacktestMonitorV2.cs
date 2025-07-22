@@ -258,7 +258,15 @@ namespace NinjaTrader.Gui.AddOns
                 price = args.Price,
                 volume = args.Volume,
                 bid = args.Bid,
-                ask = args.Ask
+                ask = args.Ask,
+                // Placeholder for multi-timeframe data
+                kama_15min = 0,
+                adx_15min = 0,
+                kama_1hr = 0,
+                adx_1hr = 0,
+                trend_slope = 0,
+                rvol_ratio = 0,
+                ker_ratio = 0
             };
             string json = JsonConvert.SerializeObject(tick);
 

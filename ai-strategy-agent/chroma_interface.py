@@ -16,24 +16,35 @@ class ChromaInterface:
             # Fallback to a default embedding function if no API key is provided
             self.embedding_fn = embedding_functions.DefaultEmbeddingFunction()
 
-    def add_feedback_entry(self, strategy_id, feedback_payload):
+    def add_feedback_entry(self, strategy_id, feedback_payload, session_context, learning_score):
         document = self._format_document(feedback_payload)
         embedding = self.embedding_fn([document])[0]
+
+        metadata = feedback_payload.copy()
+        metadata.update({
+            "strategy_id": strategy_id,
+            "session_context": session_context,
+            "learning_score": learning_score
+        })
 
         self.collection.add(
             embeddings=[embedding],
             documents=[document],
-            metadatas=[feedback_payload],
+            metadatas=[metadata],
             ids=[f"{strategy_id}_{feedback_payload['timestamp']}"]
         )
 
-    def query_similar_feedback(self, strategy_id, input_query, top_k=5):
+    def query_similar_feedback(self, strategy_id, input_query, top_k=5, session_context=None):
         query_embedding = self.embedding_fn([input_query])[0]
+
+        where_clause = {"strategy_id": strategy_id}
+        if session_context:
+            where_clause["session_context"] = session_context
 
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
-            where={"strategy_id": strategy_id}
+            where=where_clause
         )
         return results
 

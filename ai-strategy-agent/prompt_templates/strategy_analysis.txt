@@ -13,14 +13,21 @@ Last 2 hours of market data:
 Current PF: {{pf}}
 Current Session: {{session}}
 
-Please diagnose underperformance and recommend adjustments or a pause if necessary. Return your response as a JSON object that matches the following Pydantic model:
+Please diagnose underperformance and recommend adjustments or a pause if necessary.
 
-class Suggestion(BaseModel):
-    param: Optional[str] = None
-    new_value: Optional[float] = None
-    action: Optional[str] = None
-    duration: Optional[str] = None
+When making your recommendation, consider the following:
+-   **Logical Consistency:** Ensure your recommendation is consistent with the strategy's logic and the current market conditions.
+-   **Recent Feedback:** Take into account the outcomes of recent suggestions. Have similar suggestions been successful in the past?
+-   **Memory Density:** Consider how often similar market conditions have occurred in the past. Is this a rare event or a common pattern?
 
-class AnalysisResponse(BaseModel):
-    summary: str
-    suggestions: List[Suggestion]
+Return your response as a JSON object that matches the following format:
+
+{
+  "decision": "approve" | "veto" | "hold",
+  "reason": "Short explanation of signal validation or rejection.",
+  "risks": "Known risks, volume anomalies, conflicting trends, etc.",
+  "memoryMatch": {
+    "similarCase": "Summary of similar trade context",
+    "outcome": "Win/Loss and what was learned"
+  }
+}
