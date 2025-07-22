@@ -64,6 +64,18 @@ namespace NinjaTrader.Gui.AddOns
         [Display(Name="Enable Agent Override", Order=4, GroupName="Parameters")]
         public bool EnableAgentOverride { get; set; } = true;
 
+        [NinjaScriptProperty]
+        [Display(Name="Timeframes", Order=5, GroupName="Parameters")]
+        public string Timeframes { get; set; } = "1,5,15";
+
+        [NinjaScriptProperty]
+        [Display(Name="Indicators", Order=6, GroupName="Parameters")]
+        public string Indicators { get; set; } = "KAMA,ADX,RVOL,KER";
+
+        [NinjaScriptProperty]
+        [Display(Name="Confidence Threshold", Order=7, GroupName="Parameters")]
+        public double ConfidenceThreshold { get; set; } = 0.5;
+
         private TabControl tabControl;
         private ListBox historyListBox;
 
@@ -315,11 +327,12 @@ namespace NinjaTrader.Gui.AddOns
 
             Log($"Received agent decision: {message}", LogLevel.Info);
 
-            if (EnableHumanApproval)
+            try
             {
-                try
+                var decision = JsonConvert.DeserializeObject<AgentDecision>(message);
+
+                if (EnableHumanApproval)
                 {
-                    var decision = JsonConvert.DeserializeObject<AgentDecision>(message);
                     string explanation = $"Decision: {decision.decision}\n" +
                                          $"Reason: {decision.reason}\n" +
                                          $"Risks: {decision.risks}\n" +
@@ -328,10 +341,16 @@ namespace NinjaTrader.Gui.AddOns
                     approvalExpander.Visibility = Visibility.Visible;
                     approvalExpander.IsExpanded = true;
                 }
-                catch (Exception e)
+
+                // Update signal strength bar
+                if (decision.confidence.HasValue)
                 {
-                    Log($"Error parsing agent decision: {e.Message}", LogLevel.Error);
+                    signalStrengthBar.Value = decision.confidence.Value;
                 }
+            }
+            catch (Exception e)
+            {
+                Log($"Error parsing agent decision: {e.Message}", LogLevel.Error);
             }
         }
 
@@ -342,6 +361,7 @@ namespace NinjaTrader.Gui.AddOns
             public string reason { get; set; }
             public string risks { get; set; }
             public MemoryMatch memoryMatch { get; set; }
+            public double? confidence { get; set; }
         }
         public class MemoryMatch
         {
@@ -365,6 +385,8 @@ namespace NinjaTrader.Gui.AddOns
             // This is a placeholder for resetting the agent memory.
             MessageBox.Show("Are you sure you want to reset the agent memory for this strategy?", "Confirm Reset", MessageBoxButton.YesNo);
         }
+
+        private ProgressBar signalStrengthBar;
 
         protected override void OnWindowCreated(Control aControl)
         {

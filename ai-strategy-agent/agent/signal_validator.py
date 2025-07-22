@@ -1,4 +1,5 @@
 import time
+import os
 from redis_query import RedisQuery
 from chroma_interface import chroma_interface
 from agent.memory_context import MemoryContextBuilder
@@ -34,11 +35,36 @@ class SignalValidator:
             self.validate_signal(signal, context)
 
     def validate_signal(self, signal, context):
-        # This is where the core validation logic would go.
-        # It would use the context to make a decision about the signal.
-        # For now, we'll just print the signal and context.
+        # This is a simplified validation logic.
+        # A real implementation would use a more sophisticated scoring and weighting mechanism.
+
+        score = 0
+
+        # Timeframe alignment
+        if context.get("market_snapshot"):
+            latest_tick = context["market_snapshot"][-1]
+            if latest_tick.get("kama_15min") > 0 and latest_tick.get("kama_1hr") > 0:
+                score += 1
+            if latest_tick.get("adx_15min") > 20 and latest_tick.get("adx_1hr") > 20:
+                score += 1
+
+        # Factor alignment
+        if context.get("similar_feedback"):
+            # A simple check if there is any similar feedback
+            score += 1
+
+        # Confidence score
+        confidence = score / 3.0 # 3 is the max possible score in this simplified logic
+
         print(f"Validating signal: {signal}")
-        print(f"Context: {context}")
+        print(f"Confidence score: {confidence:.2f}")
+
+        confidence_threshold = float(os.getenv("CONFIDENCE_THRESHOLD", 0.5))
+
+        if confidence < confidence_threshold:
+            print("Signal rejected due to low confidence.")
+        else:
+            print("Signal approved.")
 
 if __name__ == "__main__":
     # Example usage
