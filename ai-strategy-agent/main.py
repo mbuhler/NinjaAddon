@@ -24,6 +24,7 @@ def post_summary(market_summary: MarketSummary):
 
 from schemas.models import StrategyAnalysisRequest
 from journal_writer import save_journal_entry
+from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -31,6 +32,16 @@ logger = logging.getLogger(__name__)
 
 @app.post("/analyze/strategy")
 async def analyze_strategy(data: StrategyAnalysisRequest):
+    # 1. Load recent journal entries
+    recent_entries = load_recent_journal_entries(data.strategy_name)
+
+    # 2. Format as prompt memory
+    memory_context = format_journal_entries_for_prompt(recent_entries)
+
+    # 3. Inject into prompt
+    # This is a placeholder for a more sophisticated prompt engineering.
+    prompt = f"{memory_context}\n\nToday's trades: {data.trades}"
+
     # In a real implementation, we would use a CrewAI agent here.
     # For now, we'll just return a mock response.
     ai_feedback = {
@@ -39,7 +50,8 @@ async def analyze_strategy(data: StrategyAnalysisRequest):
       "recommendation": "Consider tightening ATR filter or skipping trades before 9:00am."
     }
 
-    journal_path = save_journal_entry(data.strategy_name, data.dict(), ai_feedback)
+    # 4. Log and store used context
+    journal_path = save_journal_entry(data.strategy_name, data.dict(), ai_feedback, memory_context)
     logger.info(f"Journal saved to {journal_path}")
 
     return ai_feedback
