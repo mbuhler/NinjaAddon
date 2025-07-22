@@ -3,6 +3,7 @@ import os
 from redis_query import RedisQuery
 from chroma_interface import chroma_interface
 from agent.memory_context import MemoryContextBuilder
+from notifications.discord_notifier import send_discord_message
 
 class SignalValidator:
     def __init__(self, strategy_id, instrument):
@@ -68,7 +69,9 @@ class SignalValidator:
         confidence_threshold = float(os.getenv("CONFIDENCE_THRESHOLD", 0.5))
 
         if confidence < confidence_threshold:
-            print("Signal rejected due to low confidence.")
+            message = f"Signal for {self.instrument} rejected due to low confidence ({confidence:.2f})."
+            print(message)
+            send_discord_message("agent_override", message)
             return
 
         # Adaptive Signal Throttling
@@ -87,7 +90,9 @@ class SignalValidator:
         # This is a placeholder for a more sophisticated anomaly detection logic.
         pnl_streak = self.redis_query.get_latest_price(f"pnl_streak:{self.strategy_id}")
         if pnl_streak and int(pnl_streak) < -3:
-            print("RED FLAG: Poor PnL streak detected.")
+            message = f"Poor PnL streak detected for {self.strategy_id}."
+            print(f"RED FLAG: {message}")
+            send_discord_message("drawdown_warning", message)
             # In a real implementation, we would send a message to the Add-On
             # to display the red flag indicator.
 
@@ -98,7 +103,9 @@ class SignalValidator:
 
         drawdown = self.redis_query.get_latest_price(f"drawdown:{self.strategy_id}")
         if enable_auto_pause and drawdown and float(drawdown) > 1000:
-            print("SAFEGUARD: Strategy paused due to excessive drawdown.")
+            message = f"Strategy {self.strategy_id} paused due to excessive drawdown."
+            print(f"SAFEGUARD: {message}")
+            send_discord_message("drawdown_warning", message)
             # In a real implementation, we would send a message to the Add-On
             # to pause the strategy.
             return # Stop processing signals
