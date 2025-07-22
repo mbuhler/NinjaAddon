@@ -2,6 +2,10 @@ import argparse
 import json
 from param_extractor import extract_params
 
+from notifications.discord_notifier import send_discord_message
+import os
+from datetime import datetime
+
 def export_strategy(strategy_file, output_file):
     print(f"Exporting strategy from {strategy_file} to {output_file}...")
 
@@ -28,10 +32,38 @@ def export_strategy(strategy_file, output_file):
     ]
 
     # 5. Generate the markdown summary
-    with open(output_file, 'w') as f:
-        f.write(f"# Strategy Summary: {params['strategyName']}\n\n")
+    summary = f"# Strategy Summary: {params['strategyName']}\n\n"
+    summary += "## Strategy Logic\n\n"
+    summary += "### Parameters\n\n"
+    for name, value in params['parameters'].items():
+        summary += f"-   **{name}:** {value}\n"
 
-        f.write("## Strategy Logic\n\n")
+    summary += "\n## AI Behavior\n\n"
+    summary += "### AI Conditions\n\n"
+    for name, value in ai_conditions.items():
+        summary += f"-   **{name.replace('_', ' ').title()}:** {value}\n"
+
+    summary += "\n### Trade Memory Statistics\n\n"
+    for name, value in trade_stats.items():
+        summary += f"-   **{name.replace('_', ' ').title()}:** {value}\n"
+
+    summary += "\n### Recent Discord Alerts\n\n"
+    for alert in discord_alerts:
+        summary += f"-   {alert}\n"
+
+    # Post to Discord
+    if os.getenv("EXPORT_TARGET", "").lower() == "discord":
+        send_discord_message("general_notification", summary)
+
+    # Save local copy
+    if os.getenv("EXPORT_LOCAL_COPY", "false").lower() == "true":
+        local_dir = os.getenv("EXPORT_LOCAL_DIR", "exports")
+        os.makedirs(local_dir, exist_ok=True)
+        file_name = f"strategy_summary_{datetime.now().strftime('%Y-%m-%d')}.md"
+        with open(os.path.join(local_dir, file_name), 'w') as f:
+            f.write(summary)
+
+    print("Strategy exported successfully.")
         f.write("### Parameters\n\n")
         for name, value in params['parameters'].items():
             f.write(f"-   **{name}:** {value}\n")

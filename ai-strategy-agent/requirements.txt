@@ -10,3 +10,4 @@ mock
 chromadb-client
 matplotlib
 discord.py
+apscheduler
