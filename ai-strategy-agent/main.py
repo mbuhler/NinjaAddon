@@ -22,9 +22,11 @@ def post_summary(market_summary: MarketSummary):
     redis_store.post_market_summary(market_summary.symbol, market_summary.timestamp, market_summary.dict())
     return {"message": "Market summary posted successfully."}
 
+from fastapi import HTTPException
+from pathlib import Path
 from schemas.models import StrategyAnalysisRequest
 from journal_writer import save_journal_entry
-from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts
+from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -69,3 +71,30 @@ def get_journal_summary(strategy_name: str):
 def get_recommendation_counts_endpoint(strategy_name: str):
     counts = get_recommendation_counts(strategy_name)
     return {"strategy_name": strategy_name, "recommendation_counts": counts}
+
+from pydantic import BaseModel
+
+class FeedbackRating(BaseModel):
+    rating: str
+
+@app.post("/journal/rate-feedback/{strategy_name}/{timestamp}")
+def rate_feedback(strategy_name: str, timestamp: str, rating: FeedbackRating):
+    journal_dir = Path("journal") / strategy_name
+    file_path = journal_dir / f"{timestamp}.json"
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Journal entry not found.")
+
+    with open(file_path, 'r+') as f:
+        entry = json.load(f)
+        entry["feedback_rating"] = rating.rating
+        f.seek(0)
+        json.dump(entry, f, indent=2)
+        f.truncate()
+
+    return {"message": "Feedback rating updated successfully."}
+
+@app.get("/journal/timeline/{strategy_name}")
+def get_timeline_endpoint(strategy_name: str):
+    timeline = get_session_timeline(strategy_name)
+    return timeline

@@ -17,7 +17,8 @@ def save_journal_entry(strategy_name: str, input_data: dict, ai_feedback: dict, 
         "timestamp": datetime.now().isoformat(),
         "input": input_data,
         "ai_feedback": ai_feedback,
-        "context_used": context_used
+        "context_used": context_used,
+        "feedback_rating": None
     }
 
     with open(file_path, 'w') as f:

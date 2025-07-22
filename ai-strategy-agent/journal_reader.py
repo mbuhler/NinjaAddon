@@ -41,6 +41,27 @@ def get_recommendation_counts(strategy_name: str) -> List[tuple]:
     counts = Counter(recommendations)
     return counts.most_common(5)
 
+def get_session_timeline(strategy_name: str) -> List[dict]:
+    """Gets the session timeline for a given strategy."""
+
+    journal_dir = Path("journal") / strategy_name
+    if not journal_dir.exists():
+        return []
+
+    timeline = []
+    for file_path in sorted(journal_dir.glob("*.json")):
+        with open(file_path, 'r') as f:
+            entry = json.load(f)
+            feedback = entry.get("ai_feedback", {})
+            timeline.append({
+                "timestamp": entry.get("timestamp"),
+                "confidence_score": feedback.get("confidence_score"),
+                "recommendation": feedback.get("recommendation"),
+                "memory_summary": entry.get("context_used", "").split('\n')[0]
+            })
+
+    return timeline
+
 def load_recent_journal_entries(strategy_name: str, n: int = 5) -> List[dict]:
     """Loads the N most recent journal entries for a given strategy."""
 
