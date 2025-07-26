@@ -11,3 +11,4 @@ chromadb-client
 matplotlib
 discord.py
 apscheduler
+requests

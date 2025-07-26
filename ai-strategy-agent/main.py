@@ -29,6 +29,7 @@ from journal_writer import save_journal_entry
 from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline, get_feedback_grades, get_evolve_suggestions, get_config_suggestions
 from suggestion_parser import parse_suggestion
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -57,7 +58,21 @@ async def analyze_strategy(data: StrategyAnalysisRequest):
 
     # 4. Log and store used context
     journal_path = save_journal_entry(data.strategy_name, data.dict(), ai_feedback, memory_context)
+from notify import trigger_alert, notify_discord, notify_email, notify_slack
+
     logger.info(f"Journal saved to {journal_path}")
+
+    # 5. Define Alert Triggers
+    confidence_score = ai_feedback.get("confidence_score", 1.0)
+    if confidence_score < float(os.getenv("STRATEGY_CONFIDENCE_MIN", 0.75)):
+        trigger_alert(data.strategy_name, f"Low confidence: {confidence_score}")
+
+    degradation_info = calculate_degradation(data.strategy_name)
+    if degradation_info["degraded"]:
+        trigger_alert(data.strategy_name, f"⚠️ Strategy auto-paused due to degradation.")
+
+    if ai_feedback.get("suggested_config_patch"):
+        trigger_alert(data.strategy_name, "💡 New suggestion ready for review.")
 
     return ai_feedback
 
@@ -127,6 +142,23 @@ def override_flag(strategy_name: str):
 def get_feedback_grades_endpoint(strategy_name: str):
     grades = get_feedback_grades(strategy_name)
     return grades
+
+class Notification(BaseModel):
+    channel: str
+    message: str
+
+@app.post("/notify/test")
+def test_notification(notification: Notification):
+    if notification.channel == "discord":
+        notify_discord(notification.message)
+    elif notification.channel == "email":
+        notify_email("Test Email", notification.message)
+    elif notification.channel == "slack":
+        notify_slack(notification.message)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid channel.")
+
+    return {"message": f"Test notification sent to {notification.channel}."}
 
 @app.get("/strategy/evolve-suggestions/{strategy_name}")
 def get_evolve_suggestions_endpoint(strategy_name: str):
