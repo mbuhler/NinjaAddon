@@ -27,7 +27,7 @@ from pathlib import Path
 from fastapi.responses import StreamingResponse
 from schemas.models import StrategyAnalysisRequest
 from journal_writer import save_journal_entry
-from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline, get_feedback_grades, get_evolve_suggestions, get_config_suggestions, get_training_set, get_theme_summary
+from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline, get_feedback_grades, get_evolve_suggestions, get_config_suggestions, get_training_set, get_theme_summary, get_summary_stats
 from suggestion_parser import parse_suggestion
 import logging
 import os
@@ -81,23 +81,14 @@ from journal_reader import calculate_degradation
 
 @app.get("/journal/summary/{strategy_name}")
 def get_journal_summary(strategy_name: str):
-    recent_entries = load_recent_journal_entries(strategy_name, n=1)
-    if not recent_entries:
-        return {"last_context_used": "No memory context found.", "degraded": False, "degradation_score": 0, "degradation_reason": "No recent feedback."}
-
-    last_context_used = recent_entries[0].get("context_used", "No memory context found.")
+    summary_stats = get_summary_stats(strategy_name)
     degradation_info = calculate_degradation(strategy_name)
 
     if degradation_info["degraded"] and os.getenv("HARD_DISABLE_ENABLED", "false").lower() == "true":
         # In a real implementation, we would send a POST request to the Add-On here.
         logger.info(f"Strategy {strategy_name} is degraded. Sending pause command.")
 
-    return {
-        "last_context_used": last_context_used,
-        "degraded": degradation_info["degraded"],
-        "degradation_score": degradation_info["degradation_score"],
-        "degradation_reason": degradation_info["degradation_reason"]
-    }
+    return {**summary_stats, **degradation_info}
 
 @app.get("/journal/recommendation-counts/{strategy_name}")
 def get_recommendation_counts_endpoint(strategy_name: str):
@@ -188,8 +179,8 @@ def export_training_set_endpoint(strategy_name: str = None):
 
     return StreamingResponse(iter_jsonl(), media_type="application/x-jsonlines")
 
-@app.get("/journal/theme-summary")
-def get_theme_summary_endpoint(strategy_name: str = None):
+@app.get("/journal/themes/{strategy_name}")
+def get_theme_summary_endpoint(strategy_name: str):
     summary = get_theme_summary(strategy_name)
     return summary
 

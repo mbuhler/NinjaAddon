@@ -9,11 +9,11 @@ def parse_suggestion(suggestion: str) -> dict:
 
     # This is a simplified parser. A more robust solution would use NLP.
     if "tighten rvol" in suggestion.lower():
-        config_patch["rvol_threshold_premarket"] = 1.8
+        config_patch["rvol_threshold_premarket"] = 1.5
     if "loosen kama slope" in suggestion.lower():
-        config_patch["kama_slope_exit_overnight"] = 0.25
+        config_patch["kama_slope_exit_overnight"] = 0.3
     if "reduce max drawdown" in suggestion.lower():
-        config_patch["max_drawdown"] = 1750
+        config_patch["max_drawdown"] = 1500
 
     # Validate against the template
     template_path = Path("strategy_config_template.json")

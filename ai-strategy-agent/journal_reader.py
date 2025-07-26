@@ -141,6 +141,38 @@ def get_theme_summary(strategy_name: str = None) -> dict:
 
     return {"top_themes": counts.most_common(5), "total_suggestions": len(recommendations)}
 
+def get_summary_stats(strategy_name: str) -> dict:
+    """Gets summary stats for a given strategy."""
+
+    journal_dir = Path("journal") / strategy_name
+    if not journal_dir.exists():
+        return {"entry_count": 0, "confidence_min": 0, "confidence_max": 0, "confidence_avg": 0, "top_recommendations": []}
+
+    entry_count = 0
+    confidence_scores = []
+    recommendations = []
+    for file_path in journal_dir.glob("*.json"):
+        entry_count += 1
+        with open(file_path, 'r') as f:
+            entry = json.load(f)
+            feedback = entry.get("ai_feedback", {})
+            confidence = feedback.get("confidence_score")
+            if confidence is not None:
+                confidence_scores.append(confidence)
+            recommendation = feedback.get("recommendation")
+            if recommendation:
+                recommendations.append(recommendation)
+
+    counts = Counter(recommendations)
+
+    return {
+        "entry_count": entry_count,
+        "confidence_min": min(confidence_scores) if confidence_scores else 0,
+        "confidence_max": max(confidence_scores) if confidence_scores else 0,
+        "confidence_avg": sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0,
+        "top_recommendations": counts.most_common(3)
+    }
+
 def get_training_set(strategy_name: str = None) -> List[dict]:
     """Gets the training set data."""
 
