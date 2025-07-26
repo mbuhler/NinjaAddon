@@ -95,6 +95,32 @@ def get_evolve_suggestions(strategy_name: str) -> dict:
 
     return {"suggested_changes": suggestions}
 
+def calculate_degradation(strategy_name: str, n: int = 5) -> dict:
+    """Calculates the degradation score for a given strategy."""
+
+    entries = load_recent_journal_entries(strategy_name, n)
+    if not entries:
+        return {"degraded": False, "degradation_score": 0, "degradation_reason": "No recent feedback."}
+
+    correct = 0
+    wrong = 0
+    for entry in entries:
+        rating = entry.get("feedback_rating")
+        if rating == "correct":
+            correct += 1
+        elif rating == "wrong":
+            wrong += 1
+
+    if correct + wrong == 0:
+        return {"degraded": False, "degradation_score": 0, "degradation_reason": "No rated feedback."}
+
+    degradation_score = wrong / (correct + wrong)
+
+    degraded = degradation_score >= 0.6
+    reason = f"{wrong} out of last {len(entries)} feedback ratings marked 'wrong'" if degraded else ""
+
+    return {"degraded": degraded, "degradation_score": degradation_score, "degradation_reason": reason}
+
 def get_session_timeline(strategy_name: str) -> List[dict]:
     """Gets the session timeline for a given strategy."""
 

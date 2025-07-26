@@ -58,14 +58,27 @@ async def analyze_strategy(data: StrategyAnalysisRequest):
 
     return ai_feedback
 
+from journal_reader import calculate_degradation
+
 @app.get("/journal/summary/{strategy_name}")
 def get_journal_summary(strategy_name: str):
     recent_entries = load_recent_journal_entries(strategy_name, n=1)
     if not recent_entries:
-        return {"last_context_used": "No memory context found."}
+        return {"last_context_used": "No memory context found.", "degraded": False, "degradation_score": 0, "degradation_reason": "No recent feedback."}
 
     last_context_used = recent_entries[0].get("context_used", "No memory context found.")
-    return {"last_context_used": last_context_used}
+    degradation_info = calculate_degradation(strategy_name)
+
+    if degradation_info["degraded"] and os.getenv("HARD_DISABLE_ENABLED", "false").lower() == "true":
+        # In a real implementation, we would send a POST request to the Add-On here.
+        logger.info(f"Strategy {strategy_name} is degraded. Sending pause command.")
+
+    return {
+        "last_context_used": last_context_used,
+        "degraded": degradation_info["degraded"],
+        "degradation_score": degradation_info["degradation_score"],
+        "degradation_reason": degradation_info["degradation_reason"]
+    }
 
 @app.get("/journal/recommendation-counts/{strategy_name}")
 def get_recommendation_counts_endpoint(strategy_name: str):
@@ -98,6 +111,14 @@ def rate_feedback(strategy_name: str, timestamp: str, rating: FeedbackRating):
 def get_timeline_endpoint(strategy_name: str):
     timeline = get_session_timeline(strategy_name)
     return timeline
+
+@app.post("/journal/override_flag/{strategy_name}")
+def override_flag(strategy_name: str):
+    # This is a placeholder for the actual override logic.
+    # In a real implementation, we would update the journal entries
+    # to clear the auto_flagged field.
+    logger.info(f"Clearing degradation flag for strategy: {strategy_name}")
+    return {"message": "Degradation flag cleared successfully."}
 
 @app.get("/journal/feedback-grades/{strategy_name}")
 def get_feedback_grades_endpoint(strategy_name: str):

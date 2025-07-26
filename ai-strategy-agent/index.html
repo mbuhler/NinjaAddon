@@ -5,7 +5,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>AI Strategy Companion</h1>
+    <h1>AI Strategy Companion <span id="degradationStatus"></span></h1>
 
     <div id="memoryContextContainer">
       <h2>AI Memory Context</h2>
@@ -48,6 +48,13 @@
             const response = await fetch(`/journal/summary/${strategyName}`);
             const data = await response.json();
             document.getElementById("memoryContext").textContent = data.last_context_used;
+
+            const degradationStatus = document.getElementById("degradationStatus");
+            if (data.degraded) {
+                degradationStatus.innerHTML = `⚠️ <span title="${data.degradation_reason}">Degraded</span>`;
+            } else {
+                degradationStatus.innerHTML = "";
+            }
         }
 
         async function fetchTimeline() {
