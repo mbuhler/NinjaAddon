@@ -86,6 +86,10 @@ namespace NinjaTrader.Gui.AddOns
         [Display(Name="Enable Auto-Pause Safeguards", Order=8, GroupName="Parameters")]
         public bool EnableAutoPauseSafeguards { get; set; } = true;
 
+        [NinjaScriptProperty]
+        [Display(Name="Enable Broker Watchdog Alerts", Order=9, GroupName="Parameters")]
+        public bool EnableBrokerWatchdogAlerts { get; set; } = true;
+
         private TabControl tabControl;
         private ListBox historyListBox;
 
@@ -524,6 +528,55 @@ namespace NinjaTrader.Gui.AddOns
             var dayUploadButton = (Button)((StackPanel)((StackPanel)instrumentGrid.Children[0]).Children[1]).Children[0];
             dayUploadButton.Background = Brushes.Green;
             dayUploadButton.ToolTip = "Day backtest uploaded on 2025-07-26 at 14:10";
+        }
+
+        private System.Windows.Threading.DispatcherTimer connectionTimer;
+        private bool wasDisconnected = false;
+
+        private void OnConnectionStatusUpdate(ConnectionStatusEventArgs e)
+        {
+            if (!EnableBrokerWatchdogAlerts) return;
+
+            if (e.Status == ConnectionStatus.Disconnected)
+            {
+                wasDisconnected = true;
+                connectionTimer = new System.Windows.Threading.DispatcherTimer();
+                connectionTimer.Tick += (sender, args) => {
+                    SendBrokerStatusAlert("disconnected");
+                    connectionTimer.Stop();
+                };
+                connectionTimer.Interval = new TimeSpan(0, 1, 0); // 1 minute
+                connectionTimer.Start();
+            }
+            else if (e.Status == ConnectionStatus.Connected && wasDisconnected)
+            {
+                if (connectionTimer != null && connectionTimer.IsEnabled)
+                {
+                    connectionTimer.Stop();
+                }
+                else
+                {
+                    SendBrokerStatusAlert("reconnected");
+                }
+                wasDisconnected = false;
+            }
+        }
+
+        private async void SendBrokerStatusAlert(string status)
+        {
+            var payload = new
+            {
+                strategy_name = "AllWeather_NQ_v38", // Placeholder
+                timestamp = DateTime.UtcNow.ToString("o"),
+                status = status
+            };
+            string json = JsonConvert.SerializeObject(payload);
+
+            using (var client = new HttpClient())
+            {
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                await client.PostAsync("http://localhost:8000/alerts/broker-status", content);
+            }
         }
 
         private void ResetMemory_Click(object sender, RoutedEventArgs e)

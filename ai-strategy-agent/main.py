@@ -184,6 +184,22 @@ def get_theme_summary_endpoint(strategy_name: str):
     summary = get_theme_summary(strategy_name)
     return summary
 
+class BrokerStatus(BaseModel):
+    strategy_name: str
+    timestamp: str
+    status: str
+
+@app.post("/alerts/broker-status")
+def broker_status_alert(status: BrokerStatus):
+    if status.status == "disconnected":
+        message = f"🚨 Broker Connection Lost\nStrategy: {status.strategy_name}\nTime: {status.timestamp}\nStatus: Still offline after 60s"
+        notify_discord(message)
+    elif status.status == "reconnected":
+        message = f"✅ Broker Reconnected\nStrategy: {status.strategy_name}\nTime: {status.timestamp}\nStatus: Online"
+        notify_discord(message)
+
+    return {"message": "Broker status alert received."}
+
 @app.get("/strategy/evolve-suggestions/{strategy_name}")
 def get_evolve_suggestions_endpoint(strategy_name: str):
     suggestions = get_evolve_suggestions(strategy_name)
