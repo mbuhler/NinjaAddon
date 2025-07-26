@@ -95,6 +95,29 @@ def get_evolve_suggestions(strategy_name: str) -> dict:
 
     return {"suggested_changes": suggestions}
 
+def get_config_suggestions(strategy_name: str) -> dict:
+    """Gets config suggestions for a given strategy."""
+
+    journal_dir = Path("journal") / strategy_name
+    if not journal_dir.exists():
+        return {"suggestions": []}
+
+    suggestions = []
+    for file_path in sorted(journal_dir.glob("*.json")):
+        with open(file_path, 'r') as f:
+            entry = json.load(f)
+            feedback = entry.get("ai_feedback", {})
+            config_patch = feedback.get("suggested_config_patch")
+            if config_patch:
+                suggestions.append({
+                    "timestamp": entry.get("timestamp"),
+                    "original_feedback": feedback.get("recommendation"),
+                    "suggested_config_patch": config_patch,
+                    "applied": False # Placeholder
+                })
+
+    return {"suggestions": suggestions}
+
 def calculate_degradation(strategy_name: str, n: int = 5) -> dict:
     """Calculates the degradation score for a given strategy."""
 

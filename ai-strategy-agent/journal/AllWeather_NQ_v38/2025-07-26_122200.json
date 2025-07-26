@@ -1,0 +1,11 @@
+{
+  "strategy_name": "AllWeather_NQ_v38",
+  "timestamp": "2025-07-26T12:22:00.000000",
+  "input": {},
+  "ai_feedback": {
+    "summary": "Reduce max drawdown",
+    "recommendation": "Reduce max drawdown"
+  },
+  "context_used": "",
+  "feedback_rating": "correct"
+}

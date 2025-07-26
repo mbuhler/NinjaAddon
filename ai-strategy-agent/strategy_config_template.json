@@ -1,0 +1,14 @@
+{
+  "rvol_threshold_premarket": {
+    "type": "float",
+    "default": 1.5
+  },
+  "kama_slope_exit_overnight": {
+    "type": "float",
+    "default": 0.2
+  },
+  "max_drawdown": {
+    "type": "int",
+    "default": 2000
+  }
+}

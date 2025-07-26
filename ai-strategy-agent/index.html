@@ -38,6 +38,11 @@
         <h2>Strategy Suggestions</h2>
         <div id="suggestionsContainer"></div>
     </div>
+
+    <div>
+        <h2>Suggested Parameter Updates</h2>
+        <div id="parameterUpdatesContainer"></div>
+    </div>
         <button onclick="rateFeedback('wrong')">👎 Wrong</button>
         <button onclick="rateFeedback('neutral')">🤷 Neutral</button>
     </div>
@@ -144,11 +149,25 @@
             });
         }
 
+        async function fetchConfigSuggestions() {
+            const strategyName = "AllWeather_NQ_v38"; // Example strategy name
+            const response = await fetch(`/journal/config-suggestions/${strategyName}`);
+            const data = await response.json();
+
+            const container = document.getElementById('parameterUpdatesContainer');
+            data.suggestions.forEach(item => {
+                const entry = document.createElement('div');
+                entry.innerHTML = `<strong>${item.timestamp}</strong>: ${item.original_feedback} -> <code>${JSON.stringify(item.suggested_config_patch)}</code> <button>Apply</button> <button>Dismiss</button>`;
+                container.appendChild(entry);
+            });
+        }
+
         fetchMemoryContext();
         fetchRecommendationCounts();
         fetchTimeline();
         fetchFeedbackGrades();
         fetchEvolveSuggestions();
+        fetchConfigSuggestions();
     </script>
 </body>
 </html>

@@ -26,7 +26,8 @@ from fastapi import HTTPException
 from pathlib import Path
 from schemas.models import StrategyAnalysisRequest
 from journal_writer import save_journal_entry
-from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline, get_feedback_grades, get_evolve_suggestions
+from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline, get_feedback_grades, get_evolve_suggestions, get_config_suggestions
+from suggestion_parser import parse_suggestion
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -51,6 +52,8 @@ async def analyze_strategy(data: StrategyAnalysisRequest):
       "confidence_score": 0.87,
       "recommendation": "Consider tightening ATR filter or skipping trades before 9:00am."
     }
+
+    ai_feedback["suggested_config_patch"] = parse_suggestion(ai_feedback["recommendation"])
 
     # 4. Log and store used context
     journal_path = save_journal_entry(data.strategy_name, data.dict(), ai_feedback, memory_context)
@@ -128,4 +131,9 @@ def get_feedback_grades_endpoint(strategy_name: str):
 @app.get("/strategy/evolve-suggestions/{strategy_name}")
 def get_evolve_suggestions_endpoint(strategy_name: str):
     suggestions = get_evolve_suggestions(strategy_name)
+    return suggestions
+
+@app.get("/journal/config-suggestions/{strategy_name}")
+def get_config_suggestions_endpoint(strategy_name: str):
+    suggestions = get_config_suggestions(strategy_name)
     return suggestions
