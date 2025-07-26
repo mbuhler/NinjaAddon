@@ -11,6 +11,7 @@ using NinjaTrader.Data;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Windows.Media;
 using StackExchange.Redis;
 using Newtonsoft.Json;
 #endregion
@@ -101,15 +102,31 @@ namespace NinjaTrader.Gui.AddOns
             var instrumentGrid = new Grid();
             instrumentGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Auto) });
             instrumentGrid.RowDefinitions.Add(new RowDefinition());
-            var topPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            var topPanel = new StackPanel { Orientation = Orientation.Vertical };
+
+            var instrumentPanel = new StackPanel { Orientation = Orientation.Horizontal };
             instrumentInput = new TextBox { Width = 100 };
             var addButton = new Button { Content = "Add" };
             addButton.Click += AddInstrument_Click;
             var removeButton = new Button { Content = "Remove Selected" };
             removeButton.Click += RemoveInstrument_Click;
-            topPanel.Children.Add(instrumentInput);
-            topPanel.Children.Add(addButton);
-            topPanel.Children.Add(removeButton);
+            instrumentPanel.Children.Add(instrumentInput);
+            instrumentPanel.Children.Add(addButton);
+            instrumentPanel.Children.Add(removeButton);
+
+            var uploadPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            var dayUploadButton = new Button { Content = "🟩 Upload Day Backtest" };
+            dayUploadButton.Click += UploadButton_Click;
+            var nightUploadButton = new Button { Content = "🟦 Upload Night Backtest" };
+            nightUploadButton.Click += UploadButton_Click;
+            var mergedUploadButton = new Button { Content = "🟨 Upload Merged Backtest" };
+            mergedUploadButton.Click += UploadButton_Click;
+            uploadPanel.Children.Add(dayUploadButton);
+            uploadPanel.Children.Add(nightUploadButton);
+            uploadPanel.Children.Add(mergedUploadButton);
+
+            topPanel.Children.Add(instrumentPanel);
+            topPanel.Children.Add(uploadPanel);
             instrumentGrid.Children.Add(topPanel);
 
             instrumentListBox = new ListBox();
@@ -299,6 +316,8 @@ namespace NinjaTrader.Gui.AddOns
                 historyUpdateTimer.Tick += new EventHandler(UpdateHistory);
                 historyUpdateTimer.Interval = new TimeSpan(0,0,10);
                 historyUpdateTimer.Start();
+
+                UpdateButtonColors();
             }
         }
 
@@ -313,6 +332,13 @@ namespace NinjaTrader.Gui.AddOns
 
         private void OnMarketData(string instrument, MarketDataEventArgs args)
         {
+            // This is a placeholder for checking if the session has a backtest.
+            bool hasBacktest = true;
+            if (!hasBacktest)
+            {
+                Log($"⚠️ Live {args.Session} trade — no {args.Session} backtest uploaded!", LogLevel.Warning);
+            }
+
             if (!EnableRedisMarketCache || db == null) return;
 
             long timestamp = new DateTimeOffset(args.Time).ToUnixTimeMilliseconds();
@@ -480,6 +506,24 @@ namespace NinjaTrader.Gui.AddOns
                 Log($"Updating {kvp.Key} to {kvp.Value}", LogLevel.Info);
             }
             Print($"[AutoUpdate] Applied strategy update: {changes.Count} fields");
+        }
+
+        private void UploadButton_Click(object sender, RoutedEventArgs e)
+        {
+            // This is a placeholder for the file upload logic.
+            // In a real implementation, we would open a FileDialog,
+            // parse the filename, and send the file to the backend.
+            Log("Upload button clicked.", LogLevel.Info);
+        }
+
+        private void UpdateButtonColors()
+        {
+            // This is a placeholder for the color coding logic.
+            // In a real implementation, we would get the upload status
+            // from the backend and update the button colors accordingly.
+            var dayUploadButton = (Button)((StackPanel)((StackPanel)instrumentGrid.Children[0]).Children[1]).Children[0];
+            dayUploadButton.Background = Brushes.Green;
+            dayUploadButton.ToolTip = "Day backtest uploaded on 2025-07-26 at 14:10";
         }
 
         private void ResetMemory_Click(object sender, RoutedEventArgs e)
