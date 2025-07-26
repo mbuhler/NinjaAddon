@@ -118,6 +118,61 @@ def get_config_suggestions(strategy_name: str) -> dict:
 
     return {"suggestions": suggestions}
 
+def get_theme_summary(strategy_name: str = None) -> dict:
+    """Gets the theme summary for a given strategy."""
+
+    journal_dir = Path("journal")
+    if strategy_name:
+        journal_dir = journal_dir / strategy_name
+
+    if not journal_dir.exists():
+        return {"top_themes": [], "total_suggestions": 0}
+
+    recommendations = []
+    for file_path in journal_dir.glob("**/*.json"):
+        with open(file_path, 'r') as f:
+            entry = json.load(f)
+            feedback = entry.get("ai_feedback", {})
+            recommendation = feedback.get("recommendation")
+            if recommendation:
+                recommendations.append(recommendation)
+
+    counts = Counter(recommendations)
+
+    return {"top_themes": counts.most_common(5), "total_suggestions": len(recommendations)}
+
+def get_training_set(strategy_name: str = None) -> List[dict]:
+    """Gets the training set data."""
+
+    journal_dir = Path("journal")
+    if strategy_name:
+        journal_dir = journal_dir / strategy_name
+
+    if not journal_dir.exists():
+        return []
+
+    training_set = []
+    for file_path in sorted(journal_dir.glob("**/*.json")):
+        with open(file_path, 'r') as f:
+            entry = json.load(f)
+            feedback = entry.get("ai_feedback", {})
+
+            prompt = f"Journal entry: Confidence {feedback.get('confidence_score', 'N/A')}, Suggestion: {feedback.get('recommendation', 'N/A')}"
+            completion = f"Update {list(feedback.get('suggested_config_patch', {}).keys())} to {list(feedback.get('suggested_config_patch', {}).values())}"
+
+            training_set.append({
+                "timestamp": entry.get("timestamp"),
+                "strategy_name": entry.get("strategy_name"),
+                "confidence_score": feedback.get("confidence_score"),
+                "original_feedback": feedback.get("recommendation"),
+                "suggested_config_patch": feedback.get("suggested_config_patch"),
+                "graded_accuracy": entry.get("feedback_rating"),
+                "prompt": prompt,
+                "completion": completion
+            })
+
+    return training_set
+
 def calculate_degradation(strategy_name: str, n: int = 5) -> dict:
     """Calculates the degradation score for a given strategy."""
 

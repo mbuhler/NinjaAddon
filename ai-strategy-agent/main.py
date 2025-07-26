@@ -24,9 +24,10 @@ def post_summary(market_summary: MarketSummary):
 
 from fastapi import HTTPException
 from pathlib import Path
+from fastapi.responses import StreamingResponse
 from schemas.models import StrategyAnalysisRequest
 from journal_writer import save_journal_entry
-from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline, get_feedback_grades, get_evolve_suggestions, get_config_suggestions
+from journal_reader import load_recent_journal_entries, format_journal_entries_for_prompt, get_recommendation_counts, get_session_timeline, get_feedback_grades, get_evolve_suggestions, get_config_suggestions, get_training_set, get_theme_summary
 from suggestion_parser import parse_suggestion
 import logging
 import os
@@ -176,6 +177,21 @@ def apply_strategy_update(update: StrategyUpdate):
     # In a real implementation, we would persist this to the journal.
 
     return {"message": "Strategy update applied successfully."}
+
+@app.get("/export/training-set")
+def export_training_set_endpoint(strategy_name: str = None):
+    training_set = get_training_set(strategy_name)
+
+    def iter_jsonl():
+        for item in training_set:
+            yield json.dumps(item) + "\n"
+
+    return StreamingResponse(iter_jsonl(), media_type="application/x-jsonlines")
+
+@app.get("/journal/theme-summary")
+def get_theme_summary_endpoint(strategy_name: str = None):
+    summary = get_theme_summary(strategy_name)
+    return summary
 
 @app.get("/strategy/evolve-suggestions/{strategy_name}")
 def get_evolve_suggestions_endpoint(strategy_name: str):
