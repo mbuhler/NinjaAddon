@@ -469,6 +469,19 @@ namespace NinjaTrader.Gui.AddOns
             // This is a placeholder for viewing the agent memory.
         }
 
+        public void OnReceiveStrategyUpdate(Dictionary<string, double> changes)
+        {
+            if (!EnableAgentOverride) return;
+
+            foreach (var kvp in changes)
+            {
+                // In a real implementation, we would use reflection or a switch
+                // statement to update the correct parameter.
+                Log($"Updating {kvp.Key} to {kvp.Value}", LogLevel.Info);
+            }
+            Print($"[AutoUpdate] Applied strategy update: {changes.Count} fields");
+        }
+
         private void ResetMemory_Click(object sender, RoutedEventArgs e)
         {
             // This is a placeholder for resetting the agent memory.

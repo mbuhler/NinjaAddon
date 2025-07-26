@@ -43,6 +43,11 @@
         <h2>Suggested Parameter Updates</h2>
         <div id="parameterUpdatesContainer"></div>
     </div>
+
+    <div>
+        <h2>Live Parameter Updates</h2>
+        <div id="liveUpdatesContainer"></div>
+    </div>
         <button onclick="rateFeedback('wrong')">👎 Wrong</button>
         <button onclick="rateFeedback('neutral')">🤷 Neutral</button>
     </div>
@@ -162,12 +167,27 @@
             });
         }
 
+        async function fetchLiveUpdates() {
+            // This is a placeholder for fetching the live updates.
+            const data = [
+                { "timestamp": "2025-07-26T12:57:00", "changes": { "rvol_threshold": 1.8 }, "reason": "Auto-applied suggestion" }
+            ];
+
+            const container = document.getElementById('liveUpdatesContainer');
+            data.forEach(item => {
+                const entry = document.createElement('div');
+                entry.innerHTML = `<strong>${item.timestamp}</strong>: ${JSON.stringify(item.changes)} - ${item.reason}`;
+                container.appendChild(entry);
+            });
+        }
+
         fetchMemoryContext();
         fetchRecommendationCounts();
         fetchTimeline();
         fetchFeedbackGrades();
         fetchEvolveSuggestions();
         fetchConfigSuggestions();
+        fetchLiveUpdates();
     </script>
 </body>
 </html>

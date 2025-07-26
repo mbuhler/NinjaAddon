@@ -160,6 +160,23 @@ def test_notification(notification: Notification):
 
     return {"message": f"Test notification sent to {notification.channel}."}
 
+class StrategyUpdate(BaseModel):
+    strategy_name: str
+    changes: dict
+    reason: str
+
+@app.post("/apply-strategy-update")
+def apply_strategy_update(update: StrategyUpdate):
+    # This is a placeholder for the actual update logic.
+    # In a real implementation, we would send an HTTP POST request
+    # to the NinjaTrader Add-On.
+    logger.info(f"Applying strategy update for {update.strategy_name}: {update.changes}")
+
+    # Log the change
+    # In a real implementation, we would persist this to the journal.
+
+    return {"message": "Strategy update applied successfully."}
+
 @app.get("/strategy/evolve-suggestions/{strategy_name}")
 def get_evolve_suggestions_endpoint(strategy_name: str):
     suggestions = get_evolve_suggestions(strategy_name)
